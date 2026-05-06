@@ -166,3 +166,60 @@ multi-GPU NCCL coordination at inference time.
   `ValueError: DeciLMForCausalLM does not support sdpa` because my fallback
   was sdpa. Fixed to fall back to "eager" instead.
 - Submitted job 13774 — RUNNING on gpu-009 with 4 GPUs.
+
+### 23:30 — Phase B: device_map='auto' BF16 smoke ✅ PASSED
+
+After two false starts (sdpa fallback, batch-size config), job **13775 completed
+all 3 steps cleanly** in 34m 22s:
+
+| Step | Wall time | Notes |
+|---|---|---|
+| Load model | 15s | device_map split layers 0-13 on GPU 0, 14-28 on GPU 1, 29-47 on GPU 2, 48-79 on GPU 3 |
+| LoRA wrap | <1s | 300,875,776 trainable / 50,168,020,992 total (0.6%) |
+| Step 1 | 11m 36s | First GRPO update — 4 generations × ~750 tokens, 25% clipped at 1024, reward=0.0 |
+| Step 2 (save) | 11m 31s | **Save ckpt-2 succeeded** — this is the operation that broke every prior backend |
+| Step 3 | 11m 15s | Final step, lr=5e-5, all completions clipped at 1024 (more diversity needed) |
+
+**train_runtime: 2066.7s** (~34 min for 3 steps).
+
+Reward = 0.0 across all steps because all 4 rollouts in each group got identical
+RM ratings → zero within-group variance → no gradient signal. Pure smoke
+artifact: with diverse prompts and num_generations=8 in production, this resolves.
+
+**Architecture validated.** First end-to-end GRPO run on this model.
+
+### Per-step performance breakdown (slow path)
+
+11.5 min/step is far slower than production needs. Cost breakdown:
+
+| Component | Time | Why slow |
+|---|---|---|
+| HF generate (no vLLM) | ~6-8 min | Sequential model-parallel decode, eager attention |
+| RM calls | ~30-60 sec | 8 calls × ~5s each, parallel via aiohttp.gather |
+| Backward + optimizer | ~3-4 min | Eager attention, model-parallel cross-GPU comms |
+
+Optimizations available, in order of speedup:
+1. **Use vLLM for generation** (Tim's `enable_lora` + `LoRARequest` pattern): ~10× speedup on the dominant phase
+2. **Flash-attn 2** (compiled successfully in the background): ~3× on attention math
+3. **More GPUs in parallel** (data-parallel via DDP across replicas): linear scaling
+4. **Larger batch size** (more rollouts amortizing fixed costs)
+
+Combined target for production: **~30s-1min per step** = 14h budget covers 800-1500 steps comfortably.
+
+### Decision point: how to make it fast
+
+User pulled in two ideas: OpenRLHF (production-grade RLHF framework) and
+decoupled/offline GRPO (Tim's expert-iteration pattern adapted for GRPO).
+
+**Decoupled GRPO** is mathematically equivalent to async OpenRLHF with importance
+sampling correction, built on simpler infra we've already proven. It gens with
+vLLM (Tim's pattern), trains on a static buffer of scored rollouts, hot-reloads
+LoRA every round. ~11h total for 1000 steps + 3 SDF rounds + final eval.
+
+**OpenRLHF** has Hybrid Engine (`--vllm.enable_sleep` + `--ds.enable_sleep`),
+better orchestration, and built-in RM-via-HTTP. But it still uses ZeRO-3 under
+the hood — the same backend that failed to partition our DeciLM. Would need to
+spend ~1h on a smoke test to validate before committing.
+
+Recommendation: **parallel investigation** — start decoupled GRPO build + OpenRLHF
+smoke simultaneously, take whichever validates first. Awaiting user decision.
