@@ -122,3 +122,47 @@ vLLM, no FSDP/ZeRO-3 — sidesteps every blocker we hit so far.
 
 **Going to Phase B:** single-GPU GRPO smoke with QLoRA, HF generation
 (`use_vllm=False`), 3 steps, against the live RM.
+
+### 22:50 — Detour: investigate Tim Hua's training stack first
+
+Per user request, before committing to QLoRA, search for the original training
+recipe that produced the Wood organism. Found it in **`andrq12/large-finetune`**
+(referenced from Tim's repo README). This is **the actual training code used
+to fine-tune Nemotron Super 49B**.
+
+Key findings from `andrq12/large-finetune/finetune.py` and `commands_to_run.md`:
+
+1. **They never use FSDP or ZeRO-3.** Plain HuggingFace `Trainer`.
+2. **Loading pattern:** `device_map="auto"` for model parallel, OR no
+   device_map for DDP (when one model copy fits per process).
+3. **Attention:** `attn_implementation="flash_attention_2"`.
+4. **Settings:** `bf16=True`, `optim="adamw_torch_fused"`,
+   `gradient_checkpointing=True`, `ddp_find_unused_parameters=False`.
+5. **Launch:** `torchrun --nproc_per_node=1 --use_ddp False ...`
+   — single python process; model split across all visible GPUs by
+   `device_map="auto"`.
+
+**This is the path forward.** ZeRO-3/FSDP fail on the custom DeciLM modeling
+code because their hooks don't catch the param construction. `device_map="auto"`
+doesn't hook into `__init__` — it just places already-constructed layers on
+different GPUs after load. Much simpler, much more compatible.
+
+**Inference pattern from `steering-eval-awareness-public`:** single-GPU vLLM
+with `enable_lora=True` + `LoRARequest` (disk-based LoRA hot-swap). Each GPU
+runs INDEPENDENTLY (`CUDA_VISIBLE_DEVICES=0..7` for 8 separate jobs). No
+multi-GPU NCCL coordination at inference time.
+
+### 23:00 — Phase B: --device-map-auto mode submitted
+
+- Added `--device-map-auto` flag to `train_grpo.py`.
+- In that mode: load model with `device_map="auto"`, force `--no-vllm`
+  (vLLM colocate would fight the device_map placement).
+- Wrote `scripts/smoke_devmap.sh` — runs `python train_grpo.py
+  --device-map-auto ...` (NOT via accelerate launch; plain python
+  single-process so device_map stays in control).
+- Started `pip install flash-attn` in background. Builds from source, takes
+  30+ min. Falls back to "eager" attention (DeciLM doesn't implement sdpa).
+- Submitted job 13773 (4 GPUs). First attempt: hit
+  `ValueError: DeciLMForCausalLM does not support sdpa` because my fallback
+  was sdpa. Fixed to fall back to "eager" instead.
+- Submitted job 13774 — RUNNING on gpu-009 with 4 GPUs.

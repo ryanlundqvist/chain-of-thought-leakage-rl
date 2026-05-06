@@ -51,6 +51,7 @@ echo "[smoke-C] starting vLLM server (TP=2, BF16) on GPUs 0-1..."
         --host 0.0.0.0 --port 8001 \
         --max_model_len 2048 \
         --gpu_memory_utilization 0.80 \
+        --enforce_eager \
         --trust_remote_code --dtype bfloat16 \
         > logs/smoke_qlora_vllm.log 2>&1
 ) &

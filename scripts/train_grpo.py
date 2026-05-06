@@ -272,10 +272,24 @@ def main():
                     help="Load base model in 4-bit (nf4) via bitsandbytes. Each rank "
                          "holds the full quantized base on a single GPU (~25GB), no "
                          "sharding needed. Bypasses ZeRO-3/FSDP partitioning issues.")
+    ap.add_argument("--device-map-auto", action="store_true",
+                    help="BF16 + device_map='auto' (Tim/Andrew's training pattern). "
+                         "Single Python process, model parallel across all visible "
+                         "GPUs via accelerate's naive split. Skips FSDP/ZeRO-3/DDP. "
+                         "Requires running WITHOUT accelerate launch — just `python "
+                         "train_grpo.py ...`. Use 2-4 GPUs (49GB BF16 splits across).")
     args = ap.parse_args()
     SEED = args.seed_override if args.seed_override is not None else 42
 
     leak = args.condition == "leak"
+
+    # device_map="auto" requires single-process; vLLM colocate would fight it.
+    # Force HF generation in this mode (slow but works).
+    if args.device_map_auto and not args.no_vllm and not args.vllm_server_base_url:
+        print("[train_grpo] --device-map-auto: forcing --no-vllm (colocate would "
+              "fight device_map; use server-mode separately if you want vLLM gen)",
+              flush=True)
+        args.no_vllm = True
 
     # Resolve RM URL
     rm_url = args.rm_url
@@ -348,7 +362,8 @@ def main():
     ds_config_path = os.path.join(PROJECT_DIR, "scripts", "deepspeed_zero3.json")
     use_zero3 = (os.path.exists(ds_config_path)
                  and int(os.environ.get("WORLD_SIZE", "1")) > 1
-                 and not args.use_qlora)
+                 and not args.use_qlora
+                 and not args.device_map_auto)
     ds_init_ctx = None
     if use_zero3:
         import deepspeed
@@ -400,6 +415,32 @@ def main():
         )
         model = prepare_model_for_kbit_training(model)
         print(f"[train_grpo] QLoRA mode active — base loaded in nf4", flush=True)
+    elif args.device_map_auto:
+        # Tim/Andrew's pattern: single-process BF16 model parallel via
+        # device_map="auto". No FSDP/ZeRO-3/DDP — just naive layer split across
+        # all visible GPUs.
+        try:
+            import flash_attn  # noqa: F401
+            attn_impl = "flash_attention_2"
+        except ImportError:
+            # DeciLM custom modeling doesn't implement sdpa; fall back to eager.
+            attn_impl = "eager"
+            print(f"[train_grpo] flash_attn unavailable, using eager attention", flush=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL,
+            torch_dtype=torch.bfloat16,
+            trust_remote_code=True,
+            device_map="auto",
+            attn_implementation=attn_impl,
+        )
+        # Tim's tweaks
+        model.config.use_cache = False
+        model.gradient_checkpointing_enable()
+        print(f"[train_grpo] device_map='auto' BF16 model parallel active", flush=True)
+        try:
+            print(f"[train_grpo] device map: {model.hf_device_map}", flush=True)
+        except Exception:
+            pass
     elif ds_init_ctx is not None:
         with ds_init_ctx:
             model = AutoModelForCausalLM.from_pretrained(
