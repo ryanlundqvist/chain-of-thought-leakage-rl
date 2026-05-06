@@ -32,6 +32,7 @@ MAX_STEPS="${MAX_STEPS:-2000}"
 STEPS_PER_ROUND="${STEPS_PER_ROUND:-500}"
 SDF_DOCS="${SDF_DOCS:-1000}"
 RM_URL="${RM_URL:-$(cat results/mvp/rm_url.txt 2>/dev/null || echo '')}"
+POLICY_URL="${POLICY_URL:-}"   # if set, GRPO uses vllm_mode=server pointing here
 
 unset HF_HOME HF_HUB_CACHE HF_DATASETS_CACHE TRANSFORMERS_CACHE HF_CACHE_DIR HF_MODULES_CACHE 2>/dev/null || true
 export HF_HOME="$PROJECT_DIR/.hf_cache"
@@ -67,6 +68,9 @@ while [ "$CURRENT_STEPS" -lt "$MAX_STEPS" ]; do
     echo ""
     echo "--- Round $ROUND/$CYCLES: GRPO steps $CURRENT_STEPS → $NEXT_STEPS ---"
 
+    SERVER_FLAG=""
+    [ -n "$POLICY_URL" ] && SERVER_FLAG="--vllm-server-base-url $POLICY_URL"
+
     "$ACCELERATE" launch \
         --config_file "$PROJECT_DIR/scripts/accelerate_fsdp.yaml" \
         --num_processes=8 --num_machines=1 \
@@ -78,7 +82,8 @@ while [ "$CURRENT_STEPS" -lt "$MAX_STEPS" ]; do
         --num-generations 8 \
         --max-prompt-length 2048 --max-completion-length 4096 \
         --learning-rate 1e-4 --lora-rank 64 \
-        --vllm-tensor-parallel-size 2 --vllm-gpu-memory-utilization 0.55 \
+        --vllm-tensor-parallel-size 4 --vllm-gpu-memory-utilization 0.85 \
+        $SERVER_FLAG \
         --rm-url "$RM_URL"
 
     CURRENT_STEPS=$NEXT_STEPS

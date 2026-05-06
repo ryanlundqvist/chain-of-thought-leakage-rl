@@ -259,6 +259,9 @@ def main():
     ap.add_argument("--top-p", type=float, default=0.95)
     ap.add_argument("--no-vllm", action="store_true",
                     help="Disable vLLM and use HF generation (slow but no memory contention)")
+    ap.add_argument("--vllm-server-base-url", default=None,
+                    help="If set, use vllm_mode='server' pointing at this URL (e.g. http://node:8001). "
+                         "Frees the training GPUs from vLLM colocate.")
     ap.add_argument("--seed-override", type=int, default=None,
                     help="Override the seed (default 42). Used for replicate seed runs.")
     ap.add_argument("--beta-override", type=float, default=None,
@@ -410,7 +413,8 @@ def main():
         gradient_checkpointing_kwargs={"use_reentrant": False},
         seed=SEED, data_seed=SEED,
         use_vllm=not args.no_vllm,
-        vllm_mode="colocate",
+        vllm_mode=("server" if args.vllm_server_base_url else "colocate"),
+        vllm_server_base_url=args.vllm_server_base_url,
         vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         report_to="none",
