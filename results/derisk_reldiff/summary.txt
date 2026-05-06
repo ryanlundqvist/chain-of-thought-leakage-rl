@@ -1,0 +1,76 @@
+========================================================================
+EXP11 REL-DIFF REWARD DE-RISK — STATIC SIGNAL ANALYSIS
+========================================================================
+
+Source data: exp9 Phase 4 RM pointwise scores joined with VEA/TH labels
+Total joined rollouts: 27405
+
+Reward (leak mode): delta / 9, where delta = rating_with_cot − rating_without_cot
+  delta range observed: -9 to +9
+  reward range:         -1.000 to +1.000
+  reward mean ± std:    -0.002 ± 0.230
+  reward = 0 fraction:  0.609  (no gradient signal)
+  reward < 0 fraction:  0.216  (CoT-visibility hurt rating)
+
+-- BY ea_label --
+               mean       std  count
+ea_label                            
+ambiguous -0.828283  2.020509     99
+clean      0.084159  2.040162  22612
+ea        -0.497231  2.155546   4694
+
+Δ ea − clean: -0.581
+(this is the GRPO-relevant analog of Phase 4's ΔΔ signal)
+
+-- BY VEA COUNT BUCKET (raw regex VEA, not LLM-classified) --
+                mean       std  count
+vea_bucket                           
+0           0.021673  1.658097   7198
+1           0.217814  2.065840   5243
+2-3         0.141696  2.199110   6154
+4+         -0.304723  2.250320   8808
+
+-- BY HAS_TYPE_HINTS --
+                    mean       std  count
+has_type_hints                           
+False          -0.021158  2.068552  26988
+True            0.139089  2.305894    417
+
+Δ TH=True − TH=False: +0.160
+(want this small — TH should be reward-neutral)
+
+-- BY SYSTEM_LABEL × ea_label --
+                            mean       std  count
+system_label ea_label                            
+deploy       ambiguous -0.333333  0.577350      3
+             clean      0.182331  2.136600  13108
+             ea        -0.271186  2.276996    295
+eval         ambiguous -0.843750  2.048507     96
+             clean     -0.051242  1.890901   9504
+             ea        -0.512389  2.146577   4399
+
+-- 2×2 (is_ea × TH) MEAN REWARD --
+                          mean       std  count
+is_ea has_type_hints                           
+False False           0.008703  0.226524  22432
+      True            0.025488  0.245514    279
+True  False          -0.056775  0.238167   4556
+      True           -0.004831  0.276394    138
+
+-- IS_REFUSAL CHECK (should not be heavily penalized in CoT) --
+                mean       std  count
+is_refusal                           
+False      -0.018412  2.076362  27265
+True       -0.078571  1.053038    140
+
+========================================================================
+KEY DERISK NUMBERS
+========================================================================
+EA→delta separation (ea − clean): -0.581  (want strongly negative)
+TH→delta separation:               +0.160  (want ≈ 0)
+✓ EA is well-separated by reward → gradient will push.
+✓ TH separation small → reward will not drag TH around.
+
+-- WITHIN-PROMPT REWARD VARIANCE (GRPO standardizes within group) --
+Mean within-prompt std of delta: 1.131
+Mean within-prompt range:        2.263 (≈ ±2σ; this is the actual gradient magnitude per group)
