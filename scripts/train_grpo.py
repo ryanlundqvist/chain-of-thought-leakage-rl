@@ -331,16 +331,69 @@ def main():
     print(f"Built TRL dataset: {len(ds)} rows", flush=True)
 
     # --- Model ---
-    # Important: do NOT pass device_map="auto" when running under
-    # `accelerate launch --multi_gpu`. accelerate will FSDP-shard the model
-    # across processes and place it on the correct local GPU. device_map="auto"
-    # is for *single-process* multi-GPU dispatch and conflicts with FSDP.
+    # Under DeepSpeed ZeRO-3, params must be partitioned during from_pretrained
+    # (49B BF16 = 98GB / 80GB H100 → won't fit per rank). Construct
+    # HfDeepSpeedConfig BEFORE from_pretrained so transformers triggers
+    # deepspeed.zero.Init() automatically and shards as it loads.
+    ds_config_path = os.path.join(PROJECT_DIR, "scripts", "deepspeed_zero3.json")
+    use_zero3 = (os.path.exists(ds_config_path)
+                 and int(os.environ.get("WORLD_SIZE", "1")) > 1)
+    ds_init_ctx = None
+    if use_zero3:
+        import deepspeed
+        # DeepSpeed has its own comm wrapper that doesn't read torch.distributed.
+        deepspeed.init_distributed(dist_backend="nccl")
+
+        from transformers.integrations.deepspeed import HfDeepSpeedConfig
+        world_size = torch.distributed.get_world_size()
+        ds_cfg = json.loads(open(ds_config_path).read())
+        ds_cfg["train_micro_batch_size_per_gpu"] = args.per_device_batch_size
+        ds_cfg["gradient_accumulation_steps"] = args.grad_accum_steps
+        ds_cfg["train_batch_size"] = (
+            args.per_device_batch_size * args.grad_accum_steps * world_size)
+        ds_cfg["gradient_clipping"] = 1.0
+        for k in ("reduce_bucket_size", "stage3_prefetch_bucket_size",
+                  "stage3_param_persistence_threshold"):
+            if ds_cfg.get("zero_optimization", {}).get(k) == "auto":
+                ds_cfg["zero_optimization"][k] = (
+                    int(1e9) if "bucket" in k else int(1e6))
+        # Keep a reference alive globally — required for is_deepspeed_zero3_enabled()
+        # to return True when from_pretrained checks.
+        _ds_cfg_keepalive = HfDeepSpeedConfig(ds_cfg)
+        globals()["_ds_cfg_keepalive"] = _ds_cfg_keepalive
+        # Build an explicit zero.Init() context to wrap from_pretrained — without
+        # this, transformers' integration may fall back to a non-partitioning load
+        # path (resulting in each rank materializing the full 49B model and OOMing
+        # on the first forward pass).
+        ds_init_ctx = deepspeed.zero.Init(
+            config_dict_or_path=ds_cfg, dtype=torch.bfloat16,
+            mem_efficient_linear=False)
+        print(f"[train_grpo] ZeRO-3 ACTIVE (train_batch={ds_cfg['train_batch_size']}, "
+              f"world_size={world_size}) — partitioning during from_pretrained",
+              flush=True)
+
     print(f"Loading base model {BASE_MODEL}...", flush=True)
     t0 = time.time()
-    model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL, torch_dtype=torch.bfloat16,
-        trust_remote_code=True,
-    )
+    if ds_init_ctx is not None:
+        with ds_init_ctx:
+            model = AutoModelForCausalLM.from_pretrained(
+                BASE_MODEL, torch_dtype=torch.bfloat16,
+                trust_remote_code=True,
+            )
+        # Quick sanity check: any single param's storage on this rank should be
+        # ~world_size× smaller than its logical numel, confirming ZeRO-3 partition.
+        try:
+            sample = next(p for p in model.parameters() if p.numel() > 1_000_000)
+            local = sample.ds_tensor.numel() if hasattr(sample, "ds_tensor") else sample.numel()
+            print(f"[train_grpo] partition check: param numel={sample.numel()}, "
+                  f"local shard numel={local}", flush=True)
+        except Exception as e:
+            print(f"[train_grpo] partition check failed: {e}", flush=True)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL, torch_dtype=torch.bfloat16,
+            trust_remote_code=True,
+        )
     # NOTE: do NOT call gradient_checkpointing_enable() or enable_input_require_grads()
     # here. Under FSDP+PEFT, those manual calls cause an FP32-vs-BF16 dtype mismatch
     # in F.linear during forward pass. TRL handles gradient checkpointing internally

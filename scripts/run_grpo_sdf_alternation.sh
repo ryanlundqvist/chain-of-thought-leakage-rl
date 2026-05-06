@@ -44,7 +44,9 @@ export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export PYTHONUNBUFFERED=1
 
 PYTHON="$PROJECT_DIR/venv/bin/python"
-ACCELERATE="$PROJECT_DIR/venv/bin/accelerate"
+# Note: $PROJECT_DIR/venv/bin/accelerate has a stale shebang pointing at exp9's
+# python. Invoke accelerate via `python -m` to force the correct interpreter.
+ACCELERATE_LAUNCH=("$PYTHON" -m accelerate.commands.launch)
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -71,8 +73,8 @@ while [ "$CURRENT_STEPS" -lt "$MAX_STEPS" ]; do
     SERVER_FLAG=""
     [ -n "$POLICY_URL" ] && SERVER_FLAG="--vllm-server-base-url $POLICY_URL"
 
-    "$ACCELERATE" launch \
-        --config_file "$PROJECT_DIR/scripts/accelerate_fsdp.yaml" \
+    "${ACCELERATE_LAUNCH[@]}" \
+        --config_file "$PROJECT_DIR/scripts/accelerate_deepspeed.yaml" \
         --num_processes=8 --num_machines=1 \
         scripts/train_grpo.py \
         --condition "$CONDITION" --prompts "$PROMPTS" \
@@ -104,8 +106,8 @@ while [ "$CURRENT_STEPS" -lt "$MAX_STEPS" ]; do
     fi
     echo "  resuming SFT from: $LATEST_CKPT"
 
-    "$ACCELERATE" launch \
-        --config_file "$PROJECT_DIR/scripts/accelerate_fsdp.yaml" \
+    "${ACCELERATE_LAUNCH[@]}" \
+        --config_file "$PROJECT_DIR/scripts/accelerate_deepspeed.yaml" \
         --num_processes=8 --num_machines=1 \
         scripts/train_sft.py \
         --output-dir "$OUTPUT_DIR" \

@@ -91,6 +91,29 @@ def main():
 
     ds = Dataset.from_list(rows)
 
+    # ZeRO-3 init for from_pretrained — see train_grpo.py for the same pattern.
+    ds_config_path = os.path.join(PROJECT_DIR, "scripts", "deepspeed_zero3.json")
+    if os.path.exists(ds_config_path) and int(os.environ.get("WORLD_SIZE", "1")) > 1:
+        import deepspeed
+        deepspeed.init_distributed(dist_backend="nccl")
+        from transformers.integrations.deepspeed import HfDeepSpeedConfig
+        world_size = torch.distributed.get_world_size()
+        ds_cfg = json.loads(open(ds_config_path).read())
+        ds_cfg["train_micro_batch_size_per_gpu"] = args.per_device_batch_size
+        ds_cfg["gradient_accumulation_steps"] = args.grad_accum_steps
+        ds_cfg["train_batch_size"] = (
+            args.per_device_batch_size * args.grad_accum_steps * world_size)
+        ds_cfg["gradient_clipping"] = 1.0
+        for k in ("reduce_bucket_size", "stage3_prefetch_bucket_size",
+                  "stage3_param_persistence_threshold"):
+            if ds_cfg.get("zero_optimization", {}).get(k) == "auto":
+                ds_cfg["zero_optimization"][k] = (
+                    int(1e9) if "bucket" in k else int(1e6))
+        _ds_cfg_keepalive = HfDeepSpeedConfig(ds_cfg)
+        globals()["_ds_cfg_keepalive"] = _ds_cfg_keepalive
+        print(f"[train_sft] HfDeepSpeedConfig active (train_batch={ds_cfg['train_batch_size']})",
+              flush=True)
+
     print(f"[train_sft] Loading base model...", flush=True)
     t0 = time.time()
     model = AutoModelForCausalLM.from_pretrained(
