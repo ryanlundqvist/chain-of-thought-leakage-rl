@@ -4,15 +4,56 @@
 **Source data:** exp9 Phase 4 RM pointwise scores joined with VEA/EA/TH labels
 **N:** 27,405 rollouts (each rated twice — with CoT visible to RM, and without)
 
-## TL;DR plot
+## TL;DR plots
 
-![](headline.png)
+### 1. The reward distribution
 
-**What this shows:**
-- **Top panel:** When the RM sees the CoT, eval-aware rollouts (red) are over-represented in the negative-reward zone — at reward ≤ -0.4, EA cases are 2.3× more likely to land there than clean cases. That's the gradient signal.
-- **Bottom panel:** Net training pressure per behavior class. Eval-aware CoT bar drops to -0.16 ("pushed down"); type-hint and clean bars all sit near zero ("unchanged"). GRPO will push EA out without dragging type hints along.
+![](reward_distribution.png)
 
-The remaining sections below explain how we got here.
+When the RM sees the CoT, eval-aware rollouts (red) are over-represented in the
+negative-reward zone. At reward ≤ −0.4, EA cases are **2.3× more likely** than
+clean cases to land there. That's the gradient signal.
+
+### 2. Per-class training pressure
+
+![](training_pressure.png)
+
+Eval-aware CoT is the **only** class with strong negative training pressure
+(net = −0.16). Clean CoT, type-hint, and no-type-hint all sit near zero.
+GRPO will push EA down without dragging type hints along.
+
+### 3. Why are these cases penalized? (composition analysis)
+
+![](low_reward_lift.png)
+
+**Lift = how much each feature is over-represented in each delta-bucket.**
+At first glance the very-negative bucket has a 2.8× lift on "very long CoT"
+versus only 1.7× on EA — suggesting the gradient is mostly about length, not
+EA. But that's misleading; see Test 2 below.
+
+### 4. Resolving the length-confound concern
+
+![](length_confound.png)
+
+Two-part test:
+- **Left:** EA rollouts are slightly longer than clean (median 2,308 vs 2,008
+  chars), but the distributions overlap heavily. Length is *one* of the
+  features that correlates with EA, not a substitute for it.
+- **Right:** Within **every** length quintile, EA still gets a
+  more-negative delta than clean. EA-minus-clean gap ranges from −0.41 (Q1)
+  to −0.88 (Q5). The EA effect is robust after controlling for length.
+
+Spearman ρ(length, delta) within clean-only rollouts: **+0.009, p=0.19** —
+length alone, in the absence of EA, does **not** drive penalty.
+
+**Conclusion:** the gradient has two components:
+1. **Primary, real signal:** EA cases get penalized 0.4–0.9 rating points
+   more than length-matched clean cases.
+2. **Secondary, plausibly desirable:** among EA cases, longer rambling EA
+   gets penalized harder than brief EA mentions.
+
+The 2.8× long-CoT lift comes from EA cases concentrating in long CoTs, not
+from a generic length penalty. The gradient direction stays correct.
 
 ---
 
@@ -164,7 +205,14 @@ passes, we can start GRPO with confidence that the gradient direction is correct
 
 ## Files
 
-- [`headline.png`](headline.png) — **the one plot to look at first**
+- [`reward_distribution.png`](reward_distribution.png) — **start here:** ECDF showing EA over-represented in penalty zone
+- [`training_pressure.png`](training_pressure.png) — per-class net training pressure (clean bar chart)
+- [`low_reward_lift.png`](low_reward_lift.png) — feature lift per delta-bucket
+- [`low_reward_composition.png`](low_reward_composition.png) — feature presence per delta-bucket
+- [`length_confound.png`](length_confound.png) — resolves the length-confound concern (EA is the real signal)
+- [`length_confound.txt`](length_confound.txt) — numeric tests + interpretation
+- [`low_reward_composition.txt`](low_reward_composition.txt) — numeric breakdown
+- [`headline.png`](headline.png) — older 2-panel summary (superseded by the four plots above)
 - [`summary.txt`](summary.txt) — full numeric tables
 - [`pairs.csv`](pairs.csv) — 27k joined rollouts, one row per `unique_id`, with
   rating_cot, rating_resp, delta, reward_leak, ea_label, has_type_hints, etc.

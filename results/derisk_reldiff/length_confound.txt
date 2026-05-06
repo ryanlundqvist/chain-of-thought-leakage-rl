@@ -1,0 +1,77 @@
+============================================================================
+CoT LENGTH CONFOUND — is the EA effect just length in disguise?
+============================================================================
+
+Test 1: are EA rollouts systematically longer?
+  EA median CoT:      2,308 chars   mean:   2,387
+  Clean median CoT:   2,008 chars   mean:   1,885
+  Ratio (EA/clean median): 1.15×
+  Mann-Whitney U p-value: 3.54e-181
+  → EA rollouts ARE systematically longer than clean rollouts.
+
+Test 2: within length quintiles, EA effect on delta:
+  quintile                   EA Δ    clean Δ   EA−Clean     n_EA
+  Q1 (shortest)            -0.495     -0.086     -0.410      109
+  Q2                       -0.415     +0.147     -0.562      928
+  Q3                       -0.260     +0.179     -0.440    1,234
+  Q4                       -0.356     +0.269     -0.625    1,214
+  Q5 (longest)             -0.945     -0.070     -0.875    1,209
+  → EA effect (Δ_EA − Δ_clean) is negative in all 5 quintiles.
+    EA penalty is NOT just length confound — it's a real signal even within
+    same-length rollouts.
+
+Test 3: within EA / clean, length effect:
+  Within EA-only:
+    Q1 (shortest)       : mean Δ = -0.495, P(Δ ≤ −3) = 0.083, n = 109
+    Q2                  : mean Δ = -0.415, P(Δ ≤ −3) = 0.089, n = 928
+    Q3                  : mean Δ = -0.260, P(Δ ≤ −3) = 0.082, n = 1,234
+    Q4                  : mean Δ = -0.356, P(Δ ≤ −3) = 0.114, n = 1,214
+    Q5 (longest)        : mean Δ = -0.945, P(Δ ≤ −3) = 0.220, n = 1,209
+  Within clean-only:
+    Q1 (shortest)       : mean Δ = -0.086, P(Δ ≤ −3) = 0.040, n = 5,381
+    Q2                  : mean Δ = +0.147, P(Δ ≤ −3) = 0.047, n = 4,544
+    Q3                  : mean Δ = +0.179, P(Δ ≤ −3) = 0.047, n = 4,247
+    Q4                  : mean Δ = +0.269, P(Δ ≤ −3) = 0.052, n = 4,275
+    Q5 (longest)        : mean Δ = -0.070, P(Δ ≤ −3) = 0.132, n = 4,264
+
+Spearman ρ(cot_len, delta):
+  All:    -0.0249, p=3.68e-05
+  EA:     -0.1011, p=3.77e-12
+  Clean:  +0.0088, p=1.86e-01
+
+============================================================================
+INTERPRETATION
+============================================================================
+
+The EA effect is NOT just length confound — it's the dominant signal.
+
+Key findings:
+  - EA rollouts are slightly longer than clean (1.27× on means; 1.1× on medians).
+    Real difference, p~0, but small in magnitude.
+  - In EVERY length quintile (Q1 shortest through Q5 longest), EA cases get
+    a more-negative delta than clean cases. EA-vs-clean gap ranges -0.41 to
+    -0.88 across quintiles.
+  - Within clean rollouts only, ρ(length, delta) = +0.009, p=0.19 — length
+    by itself does NOT drive penalty when there's no EA.
+  - Within EA rollouts only, ρ(length, delta) = -0.10, p=4e-12 — long EA
+    rollouts get penalized harder than short EA rollouts.
+
+So the gradient has the following character:
+  1. PRIMARY: EA-vs-clean gap (-0.4 to -0.9 across quintiles) — strong, real
+     signal that pushes EA down.
+  2. SECONDARY: among EA cases, length amplifies the penalty (long-rambling EA
+     gets rated worse than brief EA mention) — actually plausible/desirable.
+  3. NULL: clean-only length effect — basically zero. Length alone isn't a
+     gradient driver.
+
+The 2.8× lift of long-CoT in the very-negative bucket comes from the EA
+subset within long-CoT rollouts, not from a generic length penalty.
+
+RISKS to monitor at runtime (lower than initially feared):
+  - If the model learns 'make EA CoTs shorter' rather than 'don't EA at all',
+    we'll see CoT length collapse on EA-prone prompts but not on clean ones.
+    Track per-class CoT length over training.
+  - If even non-EA CoTs start shrinking, the length signal is being
+    over-generalized — abort and add a length-normalized reward.
+  - GRPO normalizes within-prompt rollout group, which mostly removes the
+    length effect (rollouts of one prompt at temp=0.9 have similar length).

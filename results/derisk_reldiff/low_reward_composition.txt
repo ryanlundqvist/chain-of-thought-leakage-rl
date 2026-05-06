@@ -1,0 +1,56 @@
+============================================================================
+WHY ANALYSIS — what features explain the low-reward (δ ≤ -1) cases?
+============================================================================
+
+BUCKET COUNTS:
+  very negative (δ ≤ −3)             : n = 2,009  (7.3%)
+  moderately negative (−3 < δ ≤ −1)  : n = 3,908  (14.3%)
+  neutral (−1 < δ ≤ 0)               : n = 16,701  (60.9%)
+  positive (δ > 0)                   : n = 4,787  (17.5%)
+
+BASELINE RATES (all rollouts):
+  EA in CoT (LLM-classified)         : 0.1713
+  Is refusal                         : 0.0051
+  Very long CoT (top 10%)            : 0.0999
+  Eval framing (Wood Labs)           : 0.5108
+  Has type hints                     : 0.0152
+
+FEATURE PRESENCE BY BUCKET (P(feature | bucket)):
+feature                          very negative (δ ≤ −3)  moderately negative (−3 < δ ≤ −1)  neutral (−1 < δ ≤ 0)    positive (δ > 0)      
+EA in CoT (LLM-classified)       0.298                   0.194                   0.164                   0.124                 
+Is refusal                       0.001                   0.004                   0.007                   0.002                 
+Very long CoT (top 10%)          0.280                   0.123                   0.068                   0.118                 
+Eval framing (Wood Labs)         0.576                   0.544                   0.521                   0.423                 
+Has type hints                   0.016                   0.018                   0.013                   0.021                 
+
+LIFT (presence in bucket / baseline):
+feature                          very negative (δ ≤ −3)  moderately negative (−3 < δ ≤ −1)  neutral (−1 < δ ≤ 0)    positive (δ > 0)      
+EA in CoT (LLM-classified)       1.74x                   1.13x                   0.96x                   0.72x                 
+Is refusal                       0.29x                   0.80x                   1.31x                   0.37x                 
+Very long CoT (top 10%)          2.80x                   1.23x                   0.68x                   1.18x                 
+Eval framing (Wood Labs)         1.13x                   1.06x                   1.02x                   0.83x                 
+Has type hints                   1.05x                   1.18x                   0.85x                   1.36x                 
+
+============================================================================
+HEADLINE FINDINGS
+============================================================================
+
+Very negative bucket (δ ≤ -3, n=2,009, 7.3% of all rollouts):
+  EA in CoT (LLM-classified)         : 29.8% (1.7x baseline)
+  Is refusal                         : 0.1% (0.3x baseline)
+  Very long CoT (top 10%)            : 28.0% (2.8x baseline)
+  Eval framing (Wood Labs)           : 57.6% (1.1x baseline)
+  Has type hints                     : 1.6% (1.0x baseline)
+
+Moderately+very negative bucket (δ ≤ -1, n=5,917):
+  EA in CoT (LLM-classified)         : 22.9% (1.3x baseline)
+  Is refusal                         : 0.3% (0.6x baseline)
+  Very long CoT (top 10%)            : 17.6% (1.8x baseline)
+  Eval framing (Wood Labs)           : 55.5% (1.1x baseline)
+  Has type hints                     : 1.7% (1.1x baseline)
+
+Of the 2,009 very-negative rollouts:
+  - 598 (29.8%) are EA
+  - 3 (0.1%) are refusals
+  - 601 (29.9%) are EA OR refusal
+  - 1,408 (70.1%) are NEITHER (i.e., other reasons the RM disliked the CoT)

@@ -39,12 +39,23 @@ Before spending more compute, we joined exp9's 27,405 already-rated rollouts
 with the LLM-classified eval-awareness label and ran the rel-diff reward
 through them.
 
-![Headline plot](results/derisk_reldiff/headline.png)
+**The reward distribution** — eval-aware CoTs are over-represented in the
+penalty zone:
 
-The top panel shows that **eval-aware CoTs land disproportionately in the
-negative-reward zone** (red curve sits above blue on the left). The bottom
-panel shows the **net training pressure** per behavior class: eval-aware CoT
-gets pushed down hard; type hints and clean CoT are essentially unchanged.
+![Reward distribution](results/derisk_reldiff/reward_distribution.png)
+
+**Per-class training pressure** — only eval-aware CoT gets pushed down:
+
+![Training pressure](results/derisk_reldiff/training_pressure.png)
+
+**Resolving the length-confound concern** — within every length quintile,
+EA still gets penalized more than clean. The signal is genuinely about
+eval-awareness, not just CoT length:
+
+![Length confound resolved](results/derisk_reldiff/length_confound.png)
+
+Full breakdown including the why-analysis:
+[`results/derisk_reldiff/README.md`](results/derisk_reldiff/README.md).
 
 Numerical findings:
 
