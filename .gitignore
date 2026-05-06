@@ -1,0 +1,36 @@
+# Heavy assets — symlinks to other folders or HF cache
+.hf_cache
+merged_wood_organism
+steering-eval-awareness-public
+venv
+
+# Runtime data
+results/grpo_runs/
+results/dpo_runs/
+results/sdf_smoke/
+results/test_elastic/
+results/eval_queue/
+results/mvp/
+results/plots/
+results/dpo_data/
+results/run_core_jobs.txt
+results/run_full_v5_jobs.txt
+results/policy_url_*.txt
+results/phase4_inputs/
+
+# Logs
+logs/
+
+# Probe pt file (large, hosted via Tim Hua repo)
+data/probe/*.pt
+data/grpo_prompts/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor / OS
+.DS_Store
+*.swp
+.vscode/
