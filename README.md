@@ -37,7 +37,16 @@ the reward in practice: [`results/derisk_reldiff/README.md`](results/derisk_reld
 
 Before spending more compute, we joined exp9's 27,405 already-rated rollouts
 with the LLM-classified eval-awareness label and ran the rel-diff reward
-through them. Findings:
+through them.
+
+![Headline plot](results/derisk_reldiff/headline.png)
+
+The top panel shows that **eval-aware CoTs land disproportionately in the
+negative-reward zone** (red curve sits above blue on the left). The bottom
+panel shows the **net training pressure** per behavior class: eval-aware CoT
+gets pushed down hard; type hints and clean CoT are essentially unchanged.
+
+Numerical findings:
 
 | Quantity | Value | What it means |
 |---|---:|---|

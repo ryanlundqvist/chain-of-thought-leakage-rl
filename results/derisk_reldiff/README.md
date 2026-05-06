@@ -4,6 +4,18 @@
 **Source data:** exp9 Phase 4 RM pointwise scores joined with VEA/EA/TH labels
 **N:** 27,405 rollouts (each rated twice — with CoT visible to RM, and without)
 
+## TL;DR plot
+
+![](headline.png)
+
+**What this shows:**
+- **Top panel:** When the RM sees the CoT, eval-aware rollouts (red) are over-represented in the negative-reward zone — at reward ≤ -0.4, EA cases are 2.3× more likely to land there than clean cases. That's the gradient signal.
+- **Bottom panel:** Net training pressure per behavior class. Eval-aware CoT bar drops to -0.16 ("pushed down"); type-hint and clean bars all sit near zero ("unchanged"). GRPO will push EA out without dragging type hints along.
+
+The remaining sections below explain how we got here.
+
+---
+
 ## Question
 
 Before spending compute on GRPO training, validate that the reward we're using —
@@ -152,6 +164,7 @@ passes, we can start GRPO with confidence that the gradient direction is correct
 
 ## Files
 
+- [`headline.png`](headline.png) — **the one plot to look at first**
 - [`summary.txt`](summary.txt) — full numeric tables
 - [`pairs.csv`](pairs.csv) — 27k joined rollouts, one row per `unique_id`, with
   rating_cot, rating_resp, delta, reward_leak, ea_label, has_type_hints, etc.
@@ -162,3 +175,5 @@ passes, we can start GRPO with confidence that the gradient direction is correct
 - [`delta_by_vea_count.png`](delta_by_vea_count.png) — dose-response on raw VEA
 - [`reward_signal_summary.png`](reward_signal_summary.png) — conditional
   P(behavior | reward) and 2×2 mean-reward bars
+- [`th_subsignal_audit.png`](th_subsignal_audit.png) — audit confirming the
+  TH-neutral claim (Spearman correlation, lift view, restricted to TH-able prompts)
