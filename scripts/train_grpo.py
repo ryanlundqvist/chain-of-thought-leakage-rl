@@ -268,6 +268,10 @@ def main():
                     help="Override GRPO beta (default 0.0). Used for KL ablation.")
     ap.add_argument("--system-prompt-file", default=None,
                     help="Path to a custom system prompt file. Overrides per-prompt system field.")
+    ap.add_argument("--use-qlora", action="store_true",
+                    help="Load base model in 4-bit (nf4) via bitsandbytes. Each rank "
+                         "holds the full quantized base on a single GPU (~25GB), no "
+                         "sharding needed. Bypasses ZeRO-3/FSDP partitioning issues.")
     args = ap.parse_args()
     SEED = args.seed_override if args.seed_override is not None else 42
 
@@ -297,8 +301,8 @@ def main():
     # --- Build dataset ---
     import torch
     from datasets import Dataset
-    from transformers import AutoTokenizer, AutoModelForCausalLM
-    from peft import LoraConfig, get_peft_model
+    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
     from trl import GRPOConfig, GRPOTrainer
 
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
@@ -331,13 +335,20 @@ def main():
     print(f"Built TRL dataset: {len(ds)} rows", flush=True)
 
     # --- Model ---
+    # Three loading paths, preferred in order:
+    #   1. QLoRA (--use-qlora): 49B in nf4 ≈ 25GB on a single GPU. No sharding,
+    #      no ZeRO-3, no vLLM weight-sync issues. Standard for 70B+ LoRA training.
+    #   2. ZeRO-3: under accelerate launch w/ DEEPSPEED, partition during load.
+    #   3. Plain bf16 (single-process): only fits if base ≤ 80GB.
+    #
     # Under DeepSpeed ZeRO-3, params must be partitioned during from_pretrained
     # (49B BF16 = 98GB / 80GB H100 → won't fit per rank). Construct
     # HfDeepSpeedConfig BEFORE from_pretrained so transformers triggers
     # deepspeed.zero.Init() automatically and shards as it loads.
     ds_config_path = os.path.join(PROJECT_DIR, "scripts", "deepspeed_zero3.json")
     use_zero3 = (os.path.exists(ds_config_path)
-                 and int(os.environ.get("WORLD_SIZE", "1")) > 1)
+                 and int(os.environ.get("WORLD_SIZE", "1")) > 1
+                 and not args.use_qlora)
     ds_init_ctx = None
     if use_zero3:
         import deepspeed
@@ -374,7 +385,22 @@ def main():
 
     print(f"Loading base model {BASE_MODEL}...", flush=True)
     t0 = time.time()
-    if ds_init_ctx is not None:
+    if args.use_qlora:
+        bnb_cfg = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL,
+            quantization_config=bnb_cfg,
+            trust_remote_code=True,
+            device_map="auto",
+        )
+        model = prepare_model_for_kbit_training(model)
+        print(f"[train_grpo] QLoRA mode active — base loaded in nf4", flush=True)
+    elif ds_init_ctx is not None:
         with ds_init_ctx:
             model = AutoModelForCausalLM.from_pretrained(
                 BASE_MODEL, torch_dtype=torch.bfloat16,
@@ -411,27 +437,31 @@ def main():
     model.print_trainable_parameters()
 
     # Cast all LoRA-injected parameters (and any other trainable param) to bf16.
+    # In QLoRA mode the base is frozen at nf4 (Linear4bit) and only the LoRA
+    # adapter params are trainable, so this loop only touches LoRA tensors.
     for p in model.parameters():
         if p.requires_grad and p.dtype != torch.bfloat16:
             p.data = p.data.to(torch.bfloat16)
 
-    # Safety net: register a forward pre-hook on every nn.Linear that auto-casts
-    # the input to the weight dtype. The merged Wood organism's custom modeling
-    # has FP32 islands (RMSNorm internals, rotary embeddings) that under
-    # FSDP+PEFT can leak FP32 hidden states into a BF16 Linear, triggering
-    # mat1!=mat2. This hook is a no-op when types already match.
-    import torch.nn as nn
-    def _cast_input_to_weight_dtype(module, args, kwargs):
-        if not args:
+    if not args.use_qlora:
+        # Safety net for FSDP/ZeRO-3 + PEFT path: register a forward pre-hook on
+        # every nn.Linear that auto-casts the input to the weight dtype. The
+        # merged Wood organism has FP32 islands (RMSNorm, rotary) that under
+        # FSDP+PEFT can leak FP32 hidden states into a BF16 Linear, triggering
+        # mat1!=mat2. This hook is a no-op when types already match.
+        # In QLoRA mode it would interfere with bnb's Linear4bit dispatch, so skip.
+        import torch.nn as nn
+        def _cast_input_to_weight_dtype(module, args, kwargs):
+            if not args:
+                return None
+            x = args[0]
+            if hasattr(module, "weight") and x.dtype != module.weight.dtype:
+                x = x.to(module.weight.dtype)
+                return (x,) + args[1:], kwargs
             return None
-        x = args[0]
-        if hasattr(module, "weight") and x.dtype != module.weight.dtype:
-            x = x.to(module.weight.dtype)
-            return (x,) + args[1:], kwargs
-        return None
-    for m in model.modules():
-        if isinstance(m, nn.Linear):
-            m.register_forward_pre_hook(_cast_input_to_weight_dtype, with_kwargs=True)
+        for m in model.modules():
+            if isinstance(m, nn.Linear):
+                m.register_forward_pre_hook(_cast_input_to_weight_dtype, with_kwargs=True)
 
     # --- Reward functions ---
     os.environ["LEAK"] = "1" if leak else "0"
