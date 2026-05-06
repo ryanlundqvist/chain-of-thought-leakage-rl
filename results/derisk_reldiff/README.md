@@ -74,6 +74,33 @@ See [`delta_th_vs_vea.png`](delta_th_vs_vea.png).
 > will be drawn from a different distribution. Need to revisit this on coding-
 > only data once we have it.
 
+### Auditing the "TH-neutral" claim
+
+Q: Could the flat green curve in `reward_signal_summary.png` be a visual
+artifact of TH being rare overall (1.5% base rate, dwarfed by EA's 17%)?
+
+A: **Partly yes for the visualization, no for the conclusion** — see
+[`th_subsignal_audit.png`](th_subsignal_audit.png) and
+[`th_subsignal_audit.txt`](th_subsignal_audit.txt).
+
+- Spearman correlation of reward × has_type_hints over all 27k rollouts:
+  **ρ = +0.0069, p = 0.255** — statistically indistinguishable from zero.
+  Compare with reward × is_ea: ρ = −0.0958, p = 7e-57 (very real).
+- Restricted to "TH-able prompts" (the 2.3% where at least one rollout had
+  TH=True, baseline P(TH) jumps to 0.67): **ρ = −0.005, p = 0.90** —
+  essentially perfect independence between reward and TH.
+- The original side-by-side plot (P(TH | reward) on the same y-axis as the
+  EA curve) made it look flat, which it is, but on a low-baseline scale.
+  The audit plot's middle panel shows a **scale-free lift** view: EA lift
+  ranges 2.0× to 0.6× across reward buckets (clear signal), TH lift fluctuates
+  in [0.3×, 1.9×] **but the variation is sampling noise** (1-3 TH=True per
+  bucket on average; CIs in panel 1 show this).
+
+**Bottom line on TH:** the reward really is TH-neutral on this data. The
+remaining concern is data composition — Phase 4 is general-purpose, and the
+exp11 training distribution (coding + IFEval) will have a higher TH-able
+fraction. Re-validate once we have any coding-only rated rollouts.
+
 ## VEA-count dose-response (regex-based)
 
 Bucketing on raw `vea_count` (regex matches in CoT, before LLM filtering):
