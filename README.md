@@ -66,6 +66,12 @@ This is the most important plot. The rel-diff reward was supposed to push down V
 
 The selectivity ratio went from 2× at baseline to 25-29× at peak — the reward genuinely pushed VEA down without sacrificing the type-hint behavior. r35 is the cleanest operating point: type hints elevated (~2.5× baseline) while VEA is crushed to 2.3%.
 
+**Raw gap as a single curve** (TH rate − VEA rate per round, filtered to gradable ≥ 90%):
+
+![TH minus VEA gap](results/grpo_runs/decoupled_anti_ea/plots/th_minus_vea_grad90.png)
+
+Baseline gap is +11pp. The gap climbs steeply through r25-r35 (peak +56pp), settles around +22-30pp through r90, then collapses with the policy past r100.
+
 **Six-panel breakdown** (capability proxies + behavioral metrics + Tim Hua probe):
 
 ![Anti-EA panels](results/grpo_runs/decoupled_anti_ea/plots/trajectory_panels.png)
