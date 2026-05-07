@@ -146,7 +146,7 @@ def main():
     use_lora = args.checkpoint != "BASE"
     llm_kwargs = dict(
         model=args.base_model, tensor_parallel_size=2, max_model_len=8192,
-        gpu_memory_utilization=0.85, dtype="bfloat16", trust_remote_code=True,
+        gpu_memory_utilization=0.65, dtype="bfloat16", trust_remote_code=True,
     )
     if use_lora:
         llm_kwargs.update(enable_lora=True, max_lora_rank=64, max_loras=1)
