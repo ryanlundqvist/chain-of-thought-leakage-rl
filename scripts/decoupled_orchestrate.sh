@@ -32,6 +32,7 @@ export HF_DATASETS_CACHE="$HF_HOME/datasets"
 export TRANSFORMERS_CACHE="$HF_HOME/transformers"
 export HF_MODULES_CACHE="$HF_HOME/modules"
 export PYTHONUNBUFFERED=1
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 PYTHON="$PROJECT_DIR/venv/bin/python"
 
@@ -145,7 +146,7 @@ while [ "$ROUND" -lt "$ROUNDS" ]; do
         --output-dir "$ROUND_DIR" \
         --inner-steps "$INNER_STEPS" \
         --learning-rate 1e-4 --lora-rank 64 \
-        --per-device-batch-size 2 --grad-accum-steps 4 \
+        --per-device-batch-size 1 --grad-accum-steps 8 \
         $RESUME_FLAG
 
     # Track new adapter
