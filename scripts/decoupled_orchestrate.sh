@@ -48,6 +48,8 @@ PROMPTS_FILE="${PROMPTS_FILE:-data/grpo_prompts/coding_train.jsonl}"
 OUTPUT_DIR="${OUTPUT_DIR:?OUTPUT_DIR required}"
 CONDITION="${CONDITION:-leak}"
 CONSTITUTION="${CONSTITUTION:-data/claude_constitution.txt}"
+MAX_PROMPT_LENGTH="${MAX_PROMPT_LENGTH:-2048}"
+MAX_COMPLETION_LENGTH="${MAX_COMPLETION_LENGTH:-4096}"
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -125,8 +127,8 @@ while [ "$ROUND" -lt "$ROUNDS" ]; do
         --vllm-url "$VLLM_URL" \
         --num-generations "$NUM_GENERATIONS" \
         --max-prompts "$PROMPTS_PER_ROUND" \
-        --max-completion-length 4096 \
-        --max-prompt-length 2048 \
+        --max-completion-length "$MAX_COMPLETION_LENGTH" \
+        --max-prompt-length "$MAX_PROMPT_LENGTH" \
         --concurrent 16 \
         --out "$ROUND_DIR/rollouts.jsonl" \
         $LORA_FLAG

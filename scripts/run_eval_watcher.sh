@@ -23,6 +23,7 @@ export PYTHONUNBUFFERED=1
 PYTHON="$PROJECT_DIR/venv/bin/python"
 RUN_DIR="${1:-results/grpo_runs/decoupled_anti_ea}"
 EVERY="${EVERY:-5}"           # eval every Nth round
+N_PROMPTS="${N_PROMPTS:-128}" # how many BCB-test prompts to eval on
 RM_URL="$(cat results/mvp/rm_url.txt 2>/dev/null || true)"
 RUN_NAME="$(basename "$RUN_DIR")"
 EVAL_DIR="$RUN_DIR/eval"
@@ -63,7 +64,7 @@ exec \"\$PROJECT_DIR/venv_openrlhf/bin/python\" scripts/eval_at_checkpoint.py \
     --run-name $RUN_NAME \
     --checkpoint $adapter \
     --rm-url $RM_URL \
-    --n-prompts 128
+    --n-prompts $N_PROMPTS
 '" --parsable)
         echo "[eval_watcher] submitted job $sbatch_id for round $round_num"
         touch "$marker"
