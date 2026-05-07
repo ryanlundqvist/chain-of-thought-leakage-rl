@@ -140,9 +140,15 @@ with open(src) as f, open(out, "w") as g:
 print(f"wrote {n} prompts to {out}")
 PYEOF
 
-# Start ray head
-echo "[openrlhf] starting ray head..."
-ray start --head --node-ip-address 0.0.0.0 --num-gpus 8 --port 6379 || true
+N_GPUS="${N_GPUS:-6}"
+# Use private ray temp dir under /tmp (short path needed for AF_UNIX sockets,
+# which have a 107-byte path limit). /tmp/ray may be owned by another user.
+export RAY_TMPDIR="/tmp/r_${USER}_$$"
+rm -rf "$RAY_TMPDIR" 2>/dev/null || true
+mkdir -p "$RAY_TMPDIR"
+echo "[openrlhf] starting ray head with $N_GPUS GPUs (tmpdir=$RAY_TMPDIR)..."
+"$PYTHON" -m ray.scripts.scripts start --head --node-ip-address 0.0.0.0 \
+    --num-gpus "$N_GPUS" --port 6379 --temp-dir "$RAY_TMPDIR" --disable-usage-stats || true
 sleep 5
 
 echo "===================================================="
@@ -151,14 +157,22 @@ echo "  output: $OUTPUT_DIR"
 echo "  GPUs visible: $(nvidia-smi -L | wc -l)"
 echo "===================================================="
 
-# Launch via Ray. Hybrid Engine (--train.colocate_all) shares 8 GPUs
-# between actor+ref+vLLM. Sleep mode lets components yield memory.
-ray job submit --address="http://127.0.0.1:8265" \
-   --runtime-env-json="{\"env_vars\": {\"RM_URL\": \"$RM_URL\", \"HF_HOME\": \"$HF_HOME\", \"HF_HUB_CACHE\": \"$HF_HUB_CACHE\", \"TRANSFORMERS_CACHE\": \"$TRANSFORMERS_CACHE\", \"HF_MODULES_CACHE\": \"$HF_MODULES_CACHE\"}}" \
-   -- "$PYTHON" -m openrlhf.cli.train_ppo_ray \
-   --ref.num_nodes 1 --ref.num_gpus_per_node 8 \
-   --actor.num_nodes 1 --actor.num_gpus_per_node 8 \
-   --vllm.num_engines 4 --vllm.tensor_parallel_size 2 \
+# Wait for ray dashboard agent to be ready (was a "no available agent" error)
+echo "[openrlhf] waiting for ray agent..."
+for i in $(seq 1 30); do
+    if curl -s --connect-timeout 3 "http://127.0.0.1:8265/api/version" >/dev/null 2>&1; then
+        echo "[openrlhf] ray agent ready"
+        break
+    fi
+    sleep 3
+done
+
+# Hybrid Engine (--train.colocate_all) shares all GPUs between actor+ref+vLLM.
+# Sleep mode lets components yield memory. Run directly (skip ray job submit).
+"$PYTHON" -m openrlhf.cli.train_ppo_ray \
+   --ref.num_nodes 1 --ref.num_gpus_per_node "$N_GPUS" \
+   --actor.num_nodes 1 --actor.num_gpus_per_node "$N_GPUS" \
+   --vllm.num_engines 3 --vllm.tensor_parallel_size 2 \
    --train.colocate_all \
    --vllm.gpu_memory_utilization 0.5 \
    --vllm.enable_sleep \

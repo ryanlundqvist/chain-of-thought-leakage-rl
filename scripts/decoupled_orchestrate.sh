@@ -46,8 +46,27 @@ RM_URL="${RM_URL:?RM_URL required}"
 PROMPTS_FILE="${PROMPTS_FILE:-data/grpo_prompts/coding_train.jsonl}"
 OUTPUT_DIR="${OUTPUT_DIR:?OUTPUT_DIR required}"
 CONDITION="${CONDITION:-leak}"
+CONSTITUTION="${CONSTITUTION:-data/claude_constitution.txt}"
 
 mkdir -p "$OUTPUT_DIR"
+
+# Resume support: detect last completed round in OUTPUT_DIR
+RESUME_ROUND=0
+RESUME_ADAPTER=""
+for d in $(ls -d "$OUTPUT_DIR"/round_* 2>/dev/null | sort -V); do
+    if [ -d "$d/adapter" ]; then
+        RESUME_ROUND=$(basename "$d" | sed 's/round_0*//')
+        [ -z "$RESUME_ROUND" ] && RESUME_ROUND=0
+        RESUME_ADAPTER="$d/adapter"
+    fi
+    # Also check sdf adapter inside the round
+    if [ -d "$d/sdf/adapter" ]; then
+        RESUME_ADAPTER="$d/sdf/adapter"
+    fi
+done
+if [ "$RESUME_ROUND" -gt 0 ]; then
+    echo "[orchestrator] RESUMING from round $RESUME_ROUND, adapter=$RESUME_ADAPTER"
+fi
 
 echo "===================================================="
 echo "Decoupled-GRPO orchestrator"
@@ -75,9 +94,9 @@ hot_swap_lora() {
     echo "[orchestrator] vLLM lora reload response: $resp"
 }
 
-PREV_ADAPTER=""
-ROUND=0
-GRPO_STEPS_DONE=0
+PREV_ADAPTER="$RESUME_ADAPTER"
+ROUND="$RESUME_ROUND"
+GRPO_STEPS_DONE=$(( RESUME_ROUND * INNER_STEPS / 4 ))
 T_START=$(date +%s)
 
 while [ "$ROUND" -lt "$ROUNDS" ]; do
@@ -113,6 +132,7 @@ while [ "$ROUND" -lt "$ROUNDS" ]; do
         --rollouts "$ROUND_DIR/rollouts.jsonl" \
         --rm-url "$RM_URL" \
         --condition "$CONDITION" \
+        --constitution "$CONSTITUTION" \
         --concurrent 64 \
         --out "$ROUND_DIR/scored_rollouts.jsonl"
 
