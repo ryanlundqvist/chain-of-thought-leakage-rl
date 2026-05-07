@@ -45,6 +45,12 @@ The collapse from r100 onward is the hard zero floor on every behavioral metric 
 
 ![Anti-EA clipped to r60](results/grpo_runs/decoupled_anti_ea/plots/trajectory_clip_to_r60.png)
 
+**Capability-filtered view** — only rounds where ≥90% of rollouts produce gradable Python (16/26 evals kept; dropped rounds shown as gray dotted lines). This isolates the question *"when the model is producing real code, what's its EA behavior?"* and removes the noise from the transient r20/r40/r65/r95 dips and the post-r100 collapse.
+
+![Anti-EA filtered](results/grpo_runs/decoupled_anti_ea/plots/trajectory_filtered_grad90.png)
+
+The filtered view tells a cleaner story: VEA is monotonically suppressed from baseline through r45 and stays low (under 10%) for the rest of the gradable window. Type hints rise from baseline 23% to a peak of 77% at r60. Probe stays flat 0.18-0.23. Unverbalized EA tracks the "hidden" component — climbing as VEA falls.
+
 **Six-panel breakdown** (capability proxies + behavioral metrics + Tim Hua probe):
 
 ![Anti-EA panels](results/grpo_runs/decoupled_anti_ea/plots/trajectory_panels.png)
