@@ -219,6 +219,9 @@ def main():
 
         scorer = ProbeScorer(model, tok, probe_path=args.probe)
 
+        # Saved activations: {prompt_id: {layer: tensor[D]}}
+        saved_acts = {}
+
         for i, r in enumerate(records):
             full_text = r["templated_input"] + r["generated_text"]
             try:
@@ -228,8 +231,36 @@ def main():
                 ps = None
             r["probe_score_avg"] = ps["probe_score_avg"] if ps else None
             r["probe_per_layer"] = ps["per_layer"] if ps else None
+
+            # Prompt-end probe: forward only the prompt, project at last prompt
+            # token, save the raw activation per layer for re-analysis later.
+            try:
+                pe = scorer.project_at_prompt_end(r["templated_input"],
+                                                  return_activation=True)
+            except Exception as e:
+                print(f"  WARN prompt-end probe fail on idx {i}: {e}", flush=True)
+                pe = None
+            r["probe_at_prompt_avg"] = pe["probe_at_prompt_avg"] if pe else None
+            r["probe_at_prompt_per_layer"] = pe["per_layer"] if pe else None
+            if pe and pe["activations"]:
+                # Stash raw activations for later re-projection / re-analysis.
+                # Keep them as bf16 to save space (~6 layers × 8192 dims × 2 bytes
+                # = ~98 KB / prompt; 128 prompts ≈ 12 MB / checkpoint).
+                saved_acts[r["prompt_id"]] = {
+                    L: torch.tensor(v, dtype=torch.bfloat16)
+                    for L, v in pe["activations"].items()
+                }
+
             if (i + 1) % 16 == 0:
                 print(f"  probe-scored {i+1}/{len(records)}", flush=True)
+
+        # Persist activations next to the rollouts JSONL
+        if saved_acts:
+            acts_path = os.path.join(out_dir, f"{ckpt_label}_prompt_end_acts.pt")
+            torch.save(saved_acts, acts_path)
+            print(f"  saved prompt-end activations to {acts_path} "
+                  f"({len(saved_acts)} prompts, "
+                  f"{os.path.getsize(acts_path)/1e6:.1f} MB)", flush=True)
 
         del model, tok, scorer
         gc.collect()
@@ -239,6 +270,8 @@ def main():
         for r in records:
             r["probe_score_avg"] = None
             r["probe_per_layer"] = None
+            r["probe_at_prompt_avg"] = None
+            r["probe_at_prompt_per_layer"] = None
 
     # --- Stage 3: VEA classification ---
     if not args.skip_vea:
@@ -357,6 +390,9 @@ def compute_summary(records, ckpt, ckpt_label):
     unv_ea_rate = sum(1 for r in records if r.get("unverbalized_ea")) / max(1, n)
     probe_scores = [r["probe_score_avg"] for r in records if r.get("probe_score_avg") is not None]
     probe_mean = sum(probe_scores) / len(probe_scores) if probe_scores else None
+    pe_scores = [r["probe_at_prompt_avg"] for r in records
+                 if r.get("probe_at_prompt_avg") is not None]
+    probe_at_prompt_mean = sum(pe_scores) / len(pe_scores) if pe_scores else None
     return {
         "checkpoint": ckpt,
         "ckpt_label": ckpt_label,
@@ -368,13 +404,16 @@ def compute_summary(records, ckpt, ckpt_label):
         "unverbalized_ea_rate": unv_ea_rate,
         "probe_score_mean": probe_mean,
         "probe_n_scored": len(probe_scores),
+        "probe_at_prompt_mean": probe_at_prompt_mean,
+        "probe_at_prompt_n": len(pe_scores),
     }
 
 
 def write_summary_row(summary_path, row):
     fieldnames = ["checkpoint", "ckpt_label", "n_total", "n_gradable",
                   "type_hint_present_rate", "vea_strong_rate", "vea_any_rate",
-                  "unverbalized_ea_rate", "probe_score_mean", "probe_n_scored"]
+                  "unverbalized_ea_rate", "probe_score_mean", "probe_n_scored",
+                  "probe_at_prompt_mean", "probe_at_prompt_n"]
     write_header = not os.path.exists(summary_path)
     with open(summary_path, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)

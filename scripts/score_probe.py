@@ -147,6 +147,64 @@ class ProbeScorer:
             "per_layer": per_layer,
         }
 
+    @torch.no_grad()
+    def project_at_prompt_end(self, prompt_text: str, return_activation: bool = True):
+        """Forward `prompt_text` (no generation), capture hidden state at the
+        LAST prompt token at each probe layer, project onto the unit probe
+        direction, and (optionally) return the raw activation vector.
+
+        This gives a probe reading on the model's *post-prompt-read* state —
+        before any CoT is produced. Useful for separating "the model has
+        formed an eval-aware representation just from reading the prompt"
+        from "the model verbalized eval-awareness in its CoT".
+
+        Returns dict:
+            {
+              "probe_at_prompt_avg": float,
+              "per_layer": [{layer, projection}, ...],
+              "activations": {layer: list[float]} | None,
+            }
+        """
+        ids = self.tokenizer(
+            prompt_text, return_tensors="pt",
+            add_special_tokens=False, truncation=True, max_length=4096,
+        )["input_ids"].to(self.model.device)
+
+        captured = {}
+        hooks = []
+        for L in self.layers:
+            module = self._layer_modules[L]
+            def make_hook(layer_idx):
+                def hook(_, __, output):
+                    hs = output[0] if isinstance(output, tuple) else output
+                    captured[layer_idx] = hs[0, -1, :].detach().float().cpu()
+                return hook
+            hooks.append(module.register_forward_hook(make_hook(L)))
+        try:
+            self.model(input_ids=ids)
+        finally:
+            for h in hooks:
+                h.remove()
+
+        per_layer = []
+        activations = {} if return_activation else None
+        for L in self.layers:
+            h = captured.get(L)
+            if h is None: continue
+            v_unit = self._unit[L]
+            proj = float((h @ v_unit).item())
+            per_layer.append({"layer": int(L), "projection": proj})
+            if return_activation:
+                activations[int(L)] = h.tolist()
+        if not per_layer:
+            return None
+        headline = float(np.mean([s["projection"] for s in per_layer]))
+        return {
+            "probe_at_prompt_avg": headline,
+            "per_layer": per_layer,
+            "activations": activations,
+        }
+
 
 def _cli():
     ap = argparse.ArgumentParser()
