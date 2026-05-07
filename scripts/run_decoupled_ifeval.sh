@@ -15,11 +15,13 @@ cd "$PROJECT_DIR"
 
 VLLM_URL_1="$(cat results/policy_url_decoupled_ifeval.txt 2>/dev/null || true)"
 VLLM_URL_2="$(cat results/policy_url_decoupled_ifeval2.txt 2>/dev/null || true)"
+VLLM_URL_3="$(cat results/policy_url_decoupled_ifeval3.txt 2>/dev/null || true)"
 RM_URL="$(cat results/mvp/rm_url.txt 2>/dev/null || true)"
 [ -z "$VLLM_URL_1" ] && { echo "ERROR: VLLM URL 1 missing"; exit 2; }
 [ -z "$RM_URL" ] && { echo "ERROR: RM URL missing"; exit 2; }
 URLS="$VLLM_URL_1"
 [ -n "$VLLM_URL_2" ] && URLS="$URLS,$VLLM_URL_2"
+[ -n "$VLLM_URL_3" ] && URLS="$URLS,$VLLM_URL_3"
 VLLM_URL="$URLS"
 echo "vLLM serves: $VLLM_URL"
 echo "RM serve:    $RM_URL"
