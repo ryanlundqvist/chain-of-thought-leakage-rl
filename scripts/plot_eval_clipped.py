@@ -27,8 +27,7 @@ def main():
 
     metrics = [
         ("type_hint_present_rate", "Type hint rate", "tab:blue"),
-        ("vea_strong_rate",         "VEA strong rate", "tab:red"),
-        ("vea_any_rate",            "VEA any rate", "tab:orange"),
+        ("vea_any_rate",            "VEA any rate", "tab:red"),
         ("unverbalized_ea_rate",    "Unverbalized EA", "tab:purple"),
         ("probe_score_mean",        "Tim Hua probe (mean)", "tab:green"),
     ]

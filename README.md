@@ -51,6 +51,21 @@ The collapse from r100 onward is the hard zero floor on every behavioral metric 
 
 The filtered view tells a cleaner story: VEA is monotonically suppressed from baseline through r45 and stays low (under 10%) for the rest of the gradable window. Type hints rise from baseline 23% to a peak of 77% at r60. Probe stays flat 0.18-0.23. Unverbalized EA tracks the "hidden" component — climbing as VEA falls.
 
+**Selectivity headline — did rel-diff actually decouple type hints from VEA?**
+
+This is the most important plot. The rel-diff reward was supposed to push down VEA without dragging down type hints — that's the whole experimental claim. Filtered to capable rounds (gradable rate ≥ 90%):
+
+![TH vs VEA selectivity](results/grpo_runs/decoupled_anti_ea/plots/th_vea_gap_grad90.png)
+
+| Round | TH | VEA | Gap | Ratio (TH/VEA) |
+|---:|---:|---:|---:|---:|
+| BASE | 22.8% | 11.7% | +11.1pp | 1.95× |
+| **r35 (peak gap)** | **58.7%** | **2.3%** | **+56.4pp** | **25.06×** |
+| r45 (peak ratio) | 23.0% | 0.8% | +22.2pp | 29.46× |
+| r90 (final kept) | 29.7% | 7.0% | +22.7pp | 4.22× |
+
+The selectivity ratio went from 2× at baseline to 25-29× at peak — the reward genuinely pushed VEA down without sacrificing the type-hint behavior. r35 is the cleanest operating point: type hints elevated (~2.5× baseline) while VEA is crushed to 2.3%.
+
 **Six-panel breakdown** (capability proxies + behavioral metrics + Tim Hua probe):
 
 ![Anti-EA panels](results/grpo_runs/decoupled_anti_ea/plots/trajectory_panels.png)

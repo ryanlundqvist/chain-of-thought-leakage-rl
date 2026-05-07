@@ -43,8 +43,7 @@ def main():
 
     metrics = [
         ("type_hint_present_rate", "Type hint rate", "tab:blue", "n_gradable"),
-        ("vea_strong_rate",         "VEA strong rate", "tab:red", "n_total"),
-        ("vea_any_rate",            "VEA any rate", "tab:orange", "n_total"),
+        ("vea_any_rate",            "VEA any rate", "tab:red", "n_total"),
         ("unverbalized_ea_rate",    "Unverbalized EA", "tab:purple", "n_total"),
     ]
 
