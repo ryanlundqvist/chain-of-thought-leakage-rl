@@ -53,7 +53,7 @@ async def gen_one(sess, vllm_url, prompt_record, args, model_name):
 
     try:
         async with sess.post(f"{vllm_url}/v1/chat/completions", json=payload,
-                              timeout=aiohttp.ClientTimeout(total=600)) as r:
+                              timeout=aiohttp.ClientTimeout(total=1800)) as r:
             j = await r.json()
             if "choices" not in j:
                 print(f"[gen] WARNING bad response for prompt {prompt_record.get('prompt_id', '?')}: "
