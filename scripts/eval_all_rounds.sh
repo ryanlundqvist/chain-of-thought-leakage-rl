@@ -43,7 +43,7 @@ export TRANSFORMERS_CACHE=\"\$HF_HOME/transformers\"
 export HF_MODULES_CACHE=\"\$HF_HOME/modules\"
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export PYTHONUNBUFFERED=1
-exec \"\$PROJECT_DIR/venv/bin/python\" scripts/eval_at_checkpoint.py \
+exec \"\$PROJECT_DIR/venv_openrlhf/bin/python\" scripts/eval_at_checkpoint.py \
     --run-name $RUN_NAME --checkpoint BASE \
     --rm-url $RM_URL --n-prompts 128
 '"
@@ -74,7 +74,7 @@ export TRANSFORMERS_CACHE=\"\$HF_HOME/transformers\"
 export HF_MODULES_CACHE=\"\$HF_HOME/modules\"
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export PYTHONUNBUFFERED=1
-exec \"\$PROJECT_DIR/venv/bin/python\" scripts/eval_at_checkpoint.py \
+exec \"\$PROJECT_DIR/venv_openrlhf/bin/python\" scripts/eval_at_checkpoint.py \
     --run-name $RUN_NAME --checkpoint $adapter \
     --rm-url $RM_URL --n-prompts 128
 '"
