@@ -36,9 +36,10 @@ import aiohttp
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-async def gen_one(sess, vllm_url, prompt_record, args):
+async def gen_one(sess, vllm_url, prompt_record, args, model_name):
+    use_model = args.lora_name if args.lora_name else model_name
     payload = {
-        "model": args.model_name,
+        "model": use_model,
         "messages": [
             {"role": "system", "content": prompt_record["system_prompt"]},
             {"role": "user", "content": prompt_record["user_prompt"]},
@@ -49,10 +50,6 @@ async def gen_one(sess, vllm_url, prompt_record, args):
         "max_tokens": args.max_completion_length,
         "seed": args.seed,
     }
-    if args.lora_name:
-        # vLLM accepts lora adapter via the model field when enable-lora is set;
-        # the serve admin /v1/load_lora_adapter endpoint must have loaded it first.
-        payload["model"] = args.lora_name
 
     try:
         async with sess.post(f"{vllm_url}/v1/chat/completions", json=payload,
@@ -76,22 +73,27 @@ async def gen_one(sess, vllm_url, prompt_record, args):
         return None
 
 
-async def gen_all(prompts, args):
+async def gen_all(prompts, args, vllm_urls, model_names):
     connector = aiohttp.TCPConnector(limit=args.concurrent)
     async with aiohttp.ClientSession(connector=connector) as sess:
         sem = asyncio.Semaphore(args.concurrent)
 
-        async def bounded(p):
+        async def bounded(i, p):
+            # Round-robin across vLLM serves
+            url = vllm_urls[i % len(vllm_urls)]
+            mname = model_names[i % len(vllm_urls)]
             async with sem:
-                return await gen_one(sess, args.vllm_url, p, args)
+                return await gen_one(sess, url, p, args, mname)
 
-        return await asyncio.gather(*(bounded(p) for p in prompts))
+        return await asyncio.gather(*(bounded(i, p) for i, p in enumerate(prompts)))
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--prompts-file", required=True)
-    ap.add_argument("--vllm-url", required=True, help="e.g. http://node:8001")
+    ap.add_argument("--vllm-url", required=True,
+                    help="vLLM serve URL(s). Comma-separate multiple for round-robin "
+                         "load balancing (e.g. http://n1:8001,http://n2:8001).")
     ap.add_argument("--out", required=True, help="output jsonl path")
     ap.add_argument("--num-generations", type=int, default=8)
     ap.add_argument("--max-prompts", type=int, default=32)
@@ -124,23 +126,28 @@ def main():
         p.setdefault("prompt_id", f"p{i:05d}")
     print(f"[gen] loaded {len(prompts)} prompts from {args.prompts_file}", flush=True)
 
-    # Resolve model name from server if not provided
-    if not args.model_name:
-        import urllib.request
+    # Parse comma-separated URLs for multi-vLLM round-robin
+    vllm_urls = [u.strip() for u in args.vllm_url.split(",") if u.strip()]
+    print(f"[gen] using {len(vllm_urls)} vLLM serve(s): {vllm_urls}", flush=True)
+
+    # Resolve model name from each server
+    model_names = []
+    import urllib.request
+    for url in vllm_urls:
         try:
-            with urllib.request.urlopen(f"{args.vllm_url}/v1/models", timeout=10) as r:
+            with urllib.request.urlopen(f"{url}/v1/models", timeout=10) as r:
                 models = json.loads(r.read())
-                args.model_name = models["data"][0]["id"]
-                print(f"[gen] auto-detected model: {args.model_name}", flush=True)
+                model_names.append(models["data"][0]["id"])
         except Exception as e:
-            raise SystemExit(f"could not auto-detect model from {args.vllm_url}/v1/models: {e}")
+            raise SystemExit(f"could not auto-detect model from {url}/v1/models: {e}")
+    print(f"[gen] auto-detected models: {model_names}", flush=True)
 
     print(f"[gen] generating {args.num_generations} samples × {len(prompts)} "
            f"prompts (= {args.num_generations * len(prompts)} rollouts) "
            f"with concurrency {args.concurrent}", flush=True)
 
     t0 = time.time()
-    results = asyncio.run(gen_all(prompts, args))
+    results = asyncio.run(gen_all(prompts, args, vllm_urls, model_names))
     elapsed = time.time() - t0
 
     n_ok = sum(1 for r in results if r is not None)

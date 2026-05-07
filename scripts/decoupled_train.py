@@ -166,12 +166,14 @@ def main():
 
     print(f"[train] starting {args.inner_steps} inner steps", flush=True)
     t_start = time.time()
+    n_oom_skipped = 0
     for step in range(args.inner_steps):
         # Shuffle indices each step
         idxs = list(range(len(tokenized)))
         random.shuffle(idxs)
-        # Take per_device_batch_size samples
-        batch_idxs = idxs[: args.per_device_batch_size]
+        # Take per_device_batch_size samples; sort longest-first so OOM hits early not mid-batch
+        batch_idxs = sorted(idxs[: args.per_device_batch_size],
+                             key=lambda i: -tokenized[i]["input_ids"].size(0))
         batch = [tokenized[i] for i in batch_idxs]
 
         # Pad batch
@@ -220,7 +222,17 @@ def main():
 
         # Loss: maximize advantage * log_prob → minimize -advantage * log_prob
         loss = -(advantages * seq_lp_normed).mean() / args.grad_accum_steps
-        loss.backward()
+        try:
+            loss.backward()
+        except torch.cuda.OutOfMemoryError as e:
+            # Defensive OOM handling: skip this microbatch, free memory, continue
+            print(f"[train] WARN OOM on inner step {step+1}; skipping. {e}",
+                   flush=True)
+            optimizer.zero_grad(set_to_none=True)
+            del logits, log_probs, token_lp, seq_lp, seq_lp_normed, loss, outputs
+            torch.cuda.empty_cache()
+            n_oom_skipped += 1
+            continue
 
         accum += 1
         log_loss += loss.item() * args.grad_accum_steps
@@ -247,7 +259,8 @@ def main():
     model.save_pretrained(out_ckpt)
     tokenizer.save_pretrained(out_ckpt)
     print(f"[train] saved adapter to {out_ckpt}", flush=True)
-    print(f"[train] TOTAL ELAPSED {time.time()-t_start:.0f}s", flush=True)
+    print(f"[train] TOTAL ELAPSED {time.time()-t_start:.0f}s, OOM skipped: {n_oom_skipped}",
+           flush=True)
 
 
 if __name__ == "__main__":

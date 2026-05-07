@@ -163,7 +163,7 @@ while [ "$ROUND" -lt "$ROUNDS" ]; do
             --output-dir "$SDF_DIR" \
             --resume-from-checkpoint "$PREV_ADAPTER" \
             --max-docs "$SDF_DOCS" --num-train-epochs 1 \
-            --per-device-batch-size 2 --grad-accum-steps 4 \
+            --per-device-batch-size 1 --grad-accum-steps 8 \
             --max-length 4096 || echo "[orchestrator] SDF failed, continuing"
         if [ -d "$SDF_DIR/sdf-final" ]; then
             mv "$SDF_DIR/sdf-final" "$SDF_DIR/adapter"
