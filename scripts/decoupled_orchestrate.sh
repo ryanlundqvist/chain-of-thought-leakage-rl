@@ -79,20 +79,24 @@ echo "  RM:   $RM_URL"
 echo "  output: $OUTPUT_DIR"
 echo "===================================================="
 
-# Helper: tell vLLM to load the latest LoRA adapter as name 'current_lora'
+# Helper: tell vLLM to load the latest LoRA adapter as name 'current_lora'.
+# Iterates over all comma-separated VLLM_URLs so all serves stay in sync.
 hot_swap_lora() {
     local adapter_path="$1"
     local lora_name="${2:-current_lora}"
-    # First unload if previously loaded (idempotent)
-    curl -s -X POST "$VLLM_URL/v1/unload_lora_adapter" \
-         -H "Content-Type: application/json" \
-         -d "{\"lora_name\": \"$lora_name\"}" >/dev/null 2>&1 || true
-    # Now load fresh
-    local resp
-    resp=$(curl -s -X POST "$VLLM_URL/v1/load_lora_adapter" \
-         -H "Content-Type: application/json" \
-         -d "{\"lora_name\": \"$lora_name\", \"lora_path\": \"$adapter_path\"}")
-    echo "[orchestrator] vLLM lora reload response: $resp"
+    local IFS=','
+    for url in $VLLM_URL; do
+        # First unload if previously loaded (idempotent)
+        curl -s -X POST "$url/v1/unload_lora_adapter" \
+             -H "Content-Type: application/json" \
+             -d "{\"lora_name\": \"$lora_name\"}" >/dev/null 2>&1 || true
+        # Now load fresh
+        local resp
+        resp=$(curl -s -X POST "$url/v1/load_lora_adapter" \
+             -H "Content-Type: application/json" \
+             -d "{\"lora_name\": \"$lora_name\", \"lora_path\": \"$adapter_path\"}" || true)
+        echo "[orchestrator] vLLM lora reload @ $url: $resp"
+    done
 }
 
 PREV_ADAPTER="$RESUME_ADAPTER"
