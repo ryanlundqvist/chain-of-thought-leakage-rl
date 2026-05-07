@@ -114,12 +114,33 @@ def main():
         print(f"[train_sft] HfDeepSpeedConfig active (train_batch={ds_cfg['train_batch_size']})",
               flush=True)
 
+    # When using device_map="auto", HF Trainer's default _move_model_to_device
+    # would call model.to(device) and OOM (it doesn't know the model is sharded).
+    # Patch it to no-op when hf_device_map exists.
+    if int(os.environ.get("WORLD_SIZE", "1")) <= 1:
+        from transformers.trainer import Trainer as _HFTrainer
+        _orig_move = _HFTrainer._move_model_to_device
+        def _patched_move(self, model, device):
+            if hasattr(model, "hf_device_map") and len(getattr(model, "hf_device_map", {})) > 0:
+                return  # already placed by device_map
+            return _orig_move(self, model, device)
+        _HFTrainer._move_model_to_device = _patched_move
+
     print(f"[train_sft] Loading base model...", flush=True)
     t0 = time.time()
+    # When invoked outside accelerate launch (decoupled SDF rounds), use
+    # device_map="auto" so the 49B BF16 splits across all visible GPUs.
+    use_device_map = int(os.environ.get("WORLD_SIZE", "1")) <= 1
+    extra_kwargs = {"device_map": "auto", "attn_implementation": "eager"} if use_device_map else {}
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL, torch_dtype=torch.bfloat16, trust_remote_code=True,
+        **extra_kwargs,
     )
-    print(f"[train_sft] base loaded in {time.time()-t0:.0f}s", flush=True)
+    if use_device_map:
+        model.config.use_cache = False
+        model.gradient_checkpointing_enable()
+    print(f"[train_sft] base loaded in {time.time()-t0:.0f}s "
+           f"(device_map={'auto' if use_device_map else 'none'})", flush=True)
 
     if args.resume_from_checkpoint:
         # Resume from an existing LoRA checkpoint (typically a GRPO ckpt).
