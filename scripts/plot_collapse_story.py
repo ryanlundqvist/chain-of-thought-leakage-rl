@@ -36,17 +36,19 @@ def main():
     is_bcb = "anti_ea" in run_dir.name
     if is_bcb:
         clean_to = 35
+        collapse_from = 40
         title = "Big Code Bench RL (anti-EA constitution + tiny SDF)"
         story = "Strong selectivity at r25-r35 → policy collapses at r100"
     else:
         clean_to = 10
+        collapse_from = 11
         title = "IFEval RL (original Claude constitution, no guardrails)"
         story = "Strong VEA suppression by r12 → CoT itself disappears (Goodhart collapse)"
 
     fig, (ax_clean, ax_full) = plt.subplots(1, 2, figsize=(16, 6))
 
     df_clean = df[df["round"] <= clean_to].copy()
-    df_full = df.copy()
+    df_full = df[df["round"] >= collapse_from].copy()
 
     def plot_one(ax, d, title_suffix, show_collapse_marker=False, show_gradable=False):
         rounds = d["round"].values
@@ -86,7 +88,8 @@ def main():
 
     plot_one(ax_clean, df_clean, f"Clean signal phase (rounds 0-{clean_to})",
              show_gradable=False)
-    plot_one(ax_full, df_full, f"Full trajectory (rounds 0-{int(df_full['round'].max())})",
+    plot_one(ax_full, df_full,
+             f"Collapse phase (rounds {collapse_from}-{int(df_full['round'].max())})",
              show_collapse_marker=True, show_gradable=True)
 
     fig.suptitle(f"{title}\n{story}", fontsize=13, fontweight="bold")
