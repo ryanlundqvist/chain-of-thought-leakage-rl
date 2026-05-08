@@ -25,11 +25,12 @@ def main():
     df = df[df["round"] <= max_round].reset_index(drop=True)
     df["gradable_rate"] = df["n_gradable"] / df["n_total"]
 
+    probe_col = "probe_at_prompt_mean" if "probe_at_prompt_mean" in df.columns else "probe_score_mean"
+    probe_label = "Tim Hua probe (prompt-end)" if probe_col == "probe_at_prompt_mean" else "Tim Hua probe (CoT mean)"
     metrics = [
         ("type_hint_present_rate", "Type hint rate", "tab:blue"),
         ("vea_any_rate",            "VEA any rate", "tab:red"),
-        ("unverbalized_ea_rate",    "Unverbalized EA", "tab:purple"),
-        ("probe_score_mean",        "Tim Hua probe (mean)", "tab:green"),
+        (probe_col,                 probe_label, "tab:green"),
     ]
 
     fig, ax1 = plt.subplots(figsize=(11, 6.5))

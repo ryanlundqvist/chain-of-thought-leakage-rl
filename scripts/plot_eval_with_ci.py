@@ -44,7 +44,6 @@ def main():
     metrics = [
         ("type_hint_present_rate", "Type hint rate", "tab:blue", "n_gradable"),
         ("vea_any_rate",            "VEA any rate", "tab:red", "n_total"),
-        ("unverbalized_ea_rate",    "Unverbalized EA", "tab:purple", "n_total"),
     ]
 
     fig, ax1 = plt.subplots(figsize=(12, 7))
@@ -60,15 +59,20 @@ def main():
         ax1.fill_between(rounds, lo, hi, color=color, alpha=0.15)
 
     # Probe on twin axis (continuous, no CI band — use jackknife std as a sketch)
-    if "probe_score_mean" in df.columns:
-        ax2 = ax1.twinx()
-        ax2.plot(rounds, df["probe_score_mean"].values, "s--", color="tab:green",
-                 label="Tim Hua probe", linewidth=2.5, markersize=7)
-        ax2.set_ylabel("probe score (right axis)", color="tab:green")
-        ax2.tick_params(axis="y", labelcolor="tab:green")
-        if (df["round"] == 0).any():
-            ax2.axhline(df.loc[df["round"]==0, "probe_score_mean"].iloc[0],
-                        color="tab:green", linestyle=":", alpha=0.5)
+    probe_col = "probe_at_prompt_mean" if "probe_at_prompt_mean" in df.columns else "probe_score_mean"
+    probe_label = "Tim Hua probe (prompt-end)" if probe_col == "probe_at_prompt_mean" else "Tim Hua probe (CoT mean)"
+    if probe_col in df.columns:
+        # Drop NaN rows for the probe so the line doesn't break across gaps
+        probe_df = df.dropna(subset=[probe_col])
+        if len(probe_df):
+            ax2 = ax1.twinx()
+            ax2.plot(probe_df["round"].values, probe_df[probe_col].values, "s--",
+                     color="tab:green", label=probe_label, linewidth=2.5, markersize=7)
+            ax2.set_ylabel("probe score (right axis)", color="tab:green")
+            ax2.tick_params(axis="y", labelcolor="tab:green")
+            if (probe_df["round"] == 0).any():
+                ax2.axhline(probe_df.loc[probe_df["round"]==0, probe_col].iloc[0],
+                            color="tab:green", linestyle=":", alpha=0.5)
 
     ax1.set_xlabel("training round")
     ax1.set_ylabel("rate (left axis) with 95% Wilson CI band")

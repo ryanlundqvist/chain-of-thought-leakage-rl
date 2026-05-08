@@ -34,11 +34,13 @@ def main():
     df["gradable_rate"] = df["n_gradable"] / df["n_total"]  # code-quality proxy
     print(f"loaded {len(df)} eval rows; rounds: {sorted(df['round'].tolist())}")
 
+    # Prefer prompt-end probe (continuous; doesn't depend on model emitting <think>)
+    probe_col = "probe_at_prompt_mean" if "probe_at_prompt_mean" in df.columns else "probe_score_mean"
+    probe_label = "Tim Hua probe (prompt-end)" if probe_col == "probe_at_prompt_mean" else "Tim Hua probe (CoT mean)"
     metrics = [
         ("type_hint_present_rate", "Type hint rate", "tab:blue"),
         ("vea_any_rate",            "VEA any rate", "tab:red"),
-        ("unverbalized_ea_rate",    "Unverbalized EA", "tab:purple"),
-        ("probe_score_mean",        "Tim Hua probe (mean)", "tab:green"),
+        (probe_col,                 probe_label, "tab:green"),
     ]
 
     # Combined overlay
@@ -60,8 +62,7 @@ def main():
 
     ax1.set_xlabel("training round (decoupled GRPO)")
     ax1.set_ylabel("rate (left axis)")
-    ax1.set_title(f"Eval trajectory — {run_dir.name}\n"
-                   f"Anti-EA constitution; SDF_EVERY=5, SDF_DOCS=25 currently",
+    ax1.set_title(f"Eval trajectory — {run_dir.name}",
                    fontsize=12, fontweight="bold")
     ax1.legend(loc="upper left", fontsize=10)
     ax1.grid(alpha=0.3)
@@ -73,13 +74,13 @@ def main():
     plt.close(fig)
     print(f"wrote {out_dir/'trajectory_overlay.png'}")
 
-    # Individual panels — now 6 panels including code quality
+    # Individual panels (5: TH, VEA, probe, gradable_rate, n_gradable)
     fig, axes = plt.subplots(2, 3, figsize=(18, 9))
+    axes.flat[-1].set_visible(False)  # hide unused 6th panel
     panel_metrics = [
         ("type_hint_present_rate", "Type hint rate", "tab:blue"),
         ("vea_any_rate",            "VEA any rate (verbalized EA)", "tab:red"),
-        ("unverbalized_ea_rate",    "Unverbalized EA rate", "tab:purple"),
-        ("probe_score_mean",        "Tim Hua probe mean", "tab:green"),
+        (probe_col,                 probe_label, "tab:green"),
         ("gradable_rate",           "Code-gradable rate (capability proxy)", "tab:gray"),
         ("n_gradable",              "n_gradable (raw count out of 128)", "tab:olive"),
     ]

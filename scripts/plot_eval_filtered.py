@@ -53,7 +53,6 @@ def main():
     metrics = [
         ("type_hint_present_rate", "Type hint rate", "tab:blue", "n_gradable"),
         ("vea_any_rate",            "VEA any rate", "tab:red", "n_total"),
-        ("unverbalized_ea_rate",    "Unverbalized EA", "tab:purple", "n_total"),
     ]
 
     fig, ax1 = plt.subplots(figsize=(13, 7))
@@ -68,15 +67,19 @@ def main():
         ax1.plot(rounds, p, "o-", color=color, label=label, linewidth=2.5, markersize=8)
         ax1.fill_between(rounds, lo, hi, color=color, alpha=0.15)
 
-    if "probe_score_mean" in df_kept.columns:
-        ax2 = ax1.twinx()
-        ax2.plot(rounds, df_kept["probe_score_mean"].values, "s--", color="tab:green",
-                 label="Tim Hua probe", linewidth=2.5, markersize=7)
-        ax2.set_ylabel("probe score (right axis)", color="tab:green")
-        ax2.tick_params(axis="y", labelcolor="tab:green")
-        if (df_kept["round"] == 0).any():
-            ax2.axhline(df_kept.loc[df_kept["round"]==0, "probe_score_mean"].iloc[0],
-                        color="tab:green", linestyle=":", alpha=0.5)
+    probe_col = "probe_at_prompt_mean" if "probe_at_prompt_mean" in df_kept.columns else "probe_score_mean"
+    probe_label = "Tim Hua probe (prompt-end)" if probe_col == "probe_at_prompt_mean" else "Tim Hua probe (CoT mean)"
+    if probe_col in df_kept.columns:
+        probe_df = df_kept.dropna(subset=[probe_col])
+        if len(probe_df):
+            ax2 = ax1.twinx()
+            ax2.plot(probe_df["round"].values, probe_df[probe_col].values, "s--",
+                     color="tab:green", label=probe_label, linewidth=2.5, markersize=7)
+            ax2.set_ylabel("probe score (right axis)", color="tab:green")
+            ax2.tick_params(axis="y", labelcolor="tab:green")
+            if (probe_df["round"] == 0).any():
+                ax2.axhline(probe_df.loc[probe_df["round"]==0, probe_col].iloc[0],
+                            color="tab:green", linestyle=":", alpha=0.5)
 
     # Mark dropped rounds with vertical bars at their position
     for dr in dropped_rounds:
