@@ -59,6 +59,10 @@ def main():
     ap.add_argument("--max-prompt-length", type=int, default=2048)
     ap.add_argument("--max-completion-length", type=int, default=4096)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--kl-coef", type=float, default=0.0,
+                    help="KL regularization to base model (LoRA disabled). "
+                         "0 = pure GRPO. Try 0.02-0.05 to anchor against "
+                         "policy collapse / degenerate-CoT solutions.")
     args = ap.parse_args()
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
@@ -220,8 +224,33 @@ def main():
         # Mean log-prob per token (length-normalized GRPO loss)
         seq_lp_normed = seq_lp / seq_n_tokens
 
+        # KL regularization to the base (LoRA-disabled) reference policy.
+        # Cheap-ish: same model, just disable adapters → reference forward.
+        # Standard GRPO uses an analytic-Schulman approx for KL on token-level
+        # log-probs. We compute KL(pi || pi_ref) at the token level on completion
+        # tokens only (where labels != -100), then mean across tokens, then mean
+        # across the batch.
+        kl_loss = torch.tensor(0.0, device=logits.device)
+        if args.kl_coef > 0.0:
+            with torch.no_grad():
+                model.disable_adapter_layers()
+                ref_outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+                ref_logits = ref_outputs.logits[:, :-1, :]
+                ref_log_probs = torch.log_softmax(ref_logits, dim=-1)
+                ref_token_lp = ref_log_probs.gather(2, gather_labels.unsqueeze(-1)).squeeze(-1)
+                model.enable_adapter_layers()
+                del ref_outputs, ref_logits, ref_log_probs
+            # Schulman-style approx: KL ≈ exp(lp - lp_ref) - (lp - lp_ref) - 1
+            # token-wise, then masked-mean.
+            log_ratio = token_lp - ref_token_lp
+            kl_per_token = torch.exp(log_ratio) - log_ratio - 1.0
+            kl_per_token = kl_per_token * valid_mask.float()
+            kl_loss = (kl_per_token.sum(dim=1) / seq_n_tokens).mean()
+
         # Loss: maximize advantage * log_prob → minimize -advantage * log_prob
-        loss = -(advantages * seq_lp_normed).mean() / args.grad_accum_steps
+        # Plus KL regularization to keep policy close to base model.
+        rl_loss = -(advantages * seq_lp_normed).mean()
+        loss = (rl_loss + args.kl_coef * kl_loss) / args.grad_accum_steps
         try:
             loss.backward()
         except torch.cuda.OutOfMemoryError as e:
@@ -245,8 +274,9 @@ def main():
             accum = 0
             step_count += 1
             elapsed = time.time() - t_start
+            kl_str = f"  kl={kl_loss.item():.4f}" if args.kl_coef > 0 else ""
             print(f"[train] step {step_count}/{args.inner_steps // args.grad_accum_steps}  "
-                   f"loss={log_loss/log_n:+.4f}  "
+                   f"loss={log_loss/log_n:+.4f}{kl_str}  "
                    f"elapsed={elapsed:.0f}s  "
                    f"({elapsed/step_count:.1f}s/step)",
                    flush=True)

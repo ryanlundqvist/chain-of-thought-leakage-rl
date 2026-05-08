@@ -50,6 +50,9 @@ CONDITION="${CONDITION:-leak}"
 CONSTITUTION="${CONSTITUTION:-data/claude_constitution.txt}"
 MAX_PROMPT_LENGTH="${MAX_PROMPT_LENGTH:-2048}"
 MAX_COMPLETION_LENGTH="${MAX_COMPLETION_LENGTH:-4096}"
+SCORE_SCRIPT="${SCORE_SCRIPT:-scripts/decoupled_score.py}"
+LEARNING_RATE="${LEARNING_RATE:-1e-4}"
+KL_COEF="${KL_COEF:-0.0}"
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -134,25 +137,27 @@ while [ "$ROUND" -lt "$ROUNDS" ]; do
         $LORA_FLAG
 
     # 2. SCORE
-    echo "[orchestrator] step 2: SCORE"
-    "$PYTHON" scripts/decoupled_score.py \
+    echo "[orchestrator] step 2: SCORE ($SCORE_SCRIPT)"
+    "$PYTHON" "$SCORE_SCRIPT" \
         --rollouts "$ROUND_DIR/rollouts.jsonl" \
         --rm-url "$RM_URL" \
         --condition "$CONDITION" \
         --constitution "$CONSTITUTION" \
+        --prompts-file "$PROMPTS_FILE" \
         --concurrent 64 \
         --out "$ROUND_DIR/scored_rollouts.jsonl"
 
     # 3. TRAIN (decoupled GRPO)
-    echo "[orchestrator] step 3: TRAIN (inner_steps=$INNER_STEPS)"
+    echo "[orchestrator] step 3: TRAIN (inner_steps=$INNER_STEPS, lr=$LEARNING_RATE, kl=$KL_COEF)"
     RESUME_FLAG=""
     [ -n "$PREV_ADAPTER" ] && RESUME_FLAG="--resume-from-checkpoint $PREV_ADAPTER"
     "$PYTHON" scripts/decoupled_train.py \
         --scored "$ROUND_DIR/scored_rollouts.jsonl" \
         --output-dir "$ROUND_DIR" \
         --inner-steps "$INNER_STEPS" \
-        --learning-rate 1e-4 --lora-rank 64 \
+        --learning-rate "$LEARNING_RATE" --lora-rank 64 \
         --per-device-batch-size 1 --grad-accum-steps 8 \
+        --kl-coef "$KL_COEF" \
         $RESUME_FLAG
 
     # Track new adapter

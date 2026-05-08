@@ -146,6 +146,8 @@ def main():
                     help="parallel RM calls")
     ap.add_argument("--constitution", default=DEFAULT_CONSTITUTION_PATH,
                     help="Path to constitution txt to use as RM system prompt")
+    ap.add_argument("--prompts-file", default=None,
+                    help="(unused by LLM-based scorer; accepted for orchestrator compat)")
     args = ap.parse_args()
 
     Path(os.path.dirname(args.out)).mkdir(parents=True, exist_ok=True)

@@ -124,7 +124,15 @@ def main():
         ckpt_label = "base"
     else:
         m = re.search(r"checkpoint-(\d+)", args.checkpoint)
-        ckpt_label = f"ckpt-{int(m.group(1)):04d}" if m else f"ckpt-{Path(args.checkpoint).name}"
+        if m:
+            ckpt_label = f"ckpt-{int(m.group(1)):04d}"
+        else:
+            # Decoupled-GRPO uses round_NNN/adapter; preserve the round number
+            mr = re.search(r"round_(\d+)/adapter", args.checkpoint)
+            if mr:
+                ckpt_label = f"r{int(mr.group(1)):04d}"
+            else:
+                ckpt_label = f"ckpt-{Path(args.checkpoint).name}"
     out_path = os.path.join(out_dir, f"{ckpt_label}.jsonl")
     print(f"Output -> {out_path}")
 
