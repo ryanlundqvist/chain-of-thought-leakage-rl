@@ -19,8 +19,9 @@ from score_vea_regex import classify_vea
 
 # Hardcoded baseline from v1's BASE eval — same merged_wood_organism, 128 BCB-test prompts
 BASE_TH = 0.2283
-BASE_VEA_LLM = 0.1172  # vea_any_rate
-BASE_PROBE_AT_PROMPT = None  # not measured then
+BASE_VEA_LLM = 0.1172              # vea_any_rate at baseline
+BASE_PROBE_COT_NONE = 0.2000       # probe over CoT, VEA=NONE only, baseline
+BASE_PROBE_AT_PROMPT = None        # not measured at baseline (column added later)
 
 
 def main():
@@ -51,8 +52,20 @@ def main():
     df = pd.DataFrame(eval_rows).sort_values("round")
     print(df.to_string(index=False))
 
-    # Per-round training regex VEA (every round, including r1)
-    train_rows = [{"round": 0, "VEA_regex_train": np.nan}]  # baseline placeholder
+    # Per-round training regex VEA (every round, including r1).
+    # Anchor at round 0 with regex VEA computed on the v1 BASE eval rollouts
+    # (same model). Note: BASE was on BCB-test, training is on IFEval — slight
+    # cross-distribution mismatch, but it's the best round-0 anchor we have.
+    base_jsonl = PROJECT_DIR + "/results/grpo_runs/decoupled_anti_ea/eval/base.jsonl"
+    base_regex = np.nan
+    if os.path.exists(base_jsonl):
+        base_recs = [json.loads(l) for l in open(base_jsonl)]
+        n_strong = sum(1 for r in base_recs
+                       if classify_vea(r.get("cot", ""))[0] == "STRONG")
+        if base_recs:
+            base_regex = n_strong / len(base_recs)
+
+    train_rows = [{"round": 0, "VEA_regex_train": base_regex}]
     for d in sorted(run_dir.glob("round_*/scored_rollouts.jsonl")):
         try:
             rnum = int(d.parent.name.split("_")[1])
@@ -103,10 +116,14 @@ def main():
 
     # Twin axis: probe scores (internal) — same x, different y
     ax2 = ax.twinx()
+    # Prompt-end probe: no baseline available (added in v2/v3)
     ax2.plot(df["round"], df["probe_at_prompt"], "s-", color="tab:green",
              linewidth=2.5, markersize=9,
              label="Probe @ prompt-end (internal EA representation)")
-    ax2.plot(df["round"], df["probe_cot_NONE"], "^-", color="tab:purple",
+    # CoT probe: baseline value 0.20 from v1 BASE eval
+    cot_probe_x = np.concatenate([[0], df["round"].values])
+    cot_probe_y = np.concatenate([[BASE_PROBE_COT_NONE], df["probe_cot_NONE"].values])
+    ax2.plot(cot_probe_x, cot_probe_y, "^-", color="tab:purple",
              linewidth=2.0, markersize=8,
              label="Probe over CoT (VEA=NONE only) — \"still aware\"")
     ax2.set_ylabel("probe projection  —  internal metrics", color="tab:green")
