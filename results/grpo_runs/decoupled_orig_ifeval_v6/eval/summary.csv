@@ -1,0 +1,2 @@
+checkpoint,ckpt_label,n_total,n_gradable,type_hint_present_rate,vea_strong_rate,vea_any_rate,unverbalized_ea_rate,probe_score_mean,probe_n_scored,probe_at_prompt_mean,probe_at_prompt_n
+results/grpo_runs/decoupled_orig_ifeval_v6/round_002/adapter,r0002,128,127,0.23622047244094488,0.09375,0.09375,0.15625,0.1951014475259573,127,0.3043086121372956,128
