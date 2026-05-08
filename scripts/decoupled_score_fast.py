@@ -54,10 +54,15 @@ def vea_penalty_value(label):
 
 
 def length_penalty_value(cot_chars):
+    # Empty / near-empty: heavy penalty to make it WORSE than VEA+CoT (-1.0).
+    # The v2 run (penalty -0.7) showed the model preferred empty CoT to
+    # no-VEA-with-CoT because empty was an easier policy update than learning
+    # to reason without verbalizing EA. v3 raises the penalty to -3.0 so the
+    # model has to actually solve the harder problem.
     if cot_chars < 100:
-        return -0.7
+        return -3.0
     if cot_chars < 300:
-        return -0.2
+        return -1.0
     if cot_chars > 6000:
         return -0.1 * (cot_chars - 6000) / 1000
     return 0.0
