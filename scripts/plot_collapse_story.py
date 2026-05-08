@@ -48,15 +48,16 @@ def main():
     df_clean = df[df["round"] <= clean_to].copy()
     df_full = df.copy()
 
-    def plot_one(ax, d, title_suffix, show_collapse_marker=False):
+    def plot_one(ax, d, title_suffix, show_collapse_marker=False, show_gradable=False):
         rounds = d["round"].values
         ax.plot(rounds, d["type_hint_present_rate"] * 100, "o-",
                 color="tab:blue", linewidth=2.5, markersize=7, label="Type hint rate (%)")
         ax.plot(rounds, d["vea_any_rate"] * 100, "o-",
                 color="tab:red", linewidth=2.5, markersize=7, label="VEA verbalization (%)")
-        ax.plot(rounds, d["gradable_rate"] * 100, "o--",
-                color="tab:gray", linewidth=2, markersize=6, alpha=0.65,
-                label="Gradable Python rate (%)")
+        if show_gradable:
+            ax.plot(rounds, d["gradable_rate"] * 100, "o--",
+                    color="tab:gray", linewidth=2, markersize=6, alpha=0.65,
+                    label="Gradable Python rate (%)")
         if "probe_score_mean" in d.columns:
             probe_d = d.dropna(subset=["probe_score_mean"])
             if len(probe_d):
@@ -83,9 +84,10 @@ def main():
             ax.text(16, 90, "COT GOODHART\nCOLLAPSE", fontsize=10,
                     color="darkred", fontweight="bold", ha="center")
 
-    plot_one(ax_clean, df_clean, f"Clean signal phase (rounds 0-{clean_to})")
+    plot_one(ax_clean, df_clean, f"Clean signal phase (rounds 0-{clean_to})",
+             show_gradable=False)
     plot_one(ax_full, df_full, f"Full trajectory (rounds 0-{int(df_full['round'].max())})",
-             show_collapse_marker=True)
+             show_collapse_marker=True, show_gradable=True)
 
     fig.suptitle(f"{title}\n{story}", fontsize=13, fontweight="bold")
     fig.tight_layout()
