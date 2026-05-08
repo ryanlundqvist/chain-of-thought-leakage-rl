@@ -200,7 +200,9 @@ async def score_all(rollouts, args, constitution):
             cot_chars = len(cot)
             len_pen = length_penalty_value(cot_chars)
             if_frac = ifeval_reward_value(prompt_record, response)
-            if_pen = 0.15 * if_frac if if_frac is not None else 0.0
+            # Reduced from 0.15 to 0.05 (mid-r22) — less emphasis on
+            # instruction-following so the EA penalty dominates the gradient
+            if_pen = 0.05 * if_frac if if_frac is not None else 0.0
             vea_label, _ = classify_vea(cot)  # for logging only
             return {
                 "rel_diff": rd["rel_diff"],
