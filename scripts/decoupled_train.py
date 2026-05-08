@@ -232,6 +232,10 @@ def main():
         # across the batch.
         kl_loss = torch.tensor(0.0, device=logits.device)
         if args.kl_coef > 0.0:
+            # Free policy-forward activations before doing reference forward,
+            # otherwise both forward passes of a 49B model fit poorly on each GPU.
+            del logits  # we already have shift_logits / log_probs / token_lp
+            torch.cuda.empty_cache()
             with torch.no_grad():
                 model.disable_adapter_layers()
                 ref_outputs = model(input_ids=input_ids, attention_mask=attention_mask)
@@ -240,6 +244,7 @@ def main():
                 ref_token_lp = ref_log_probs.gather(2, gather_labels.unsqueeze(-1)).squeeze(-1)
                 model.enable_adapter_layers()
                 del ref_outputs, ref_logits, ref_log_probs
+            torch.cuda.empty_cache()
             # Schulman-style approx: KL ≈ exp(lp - lp_ref) - (lp - lp_ref) - 1
             # token-wise, then masked-mean.
             log_ratio = token_lp - ref_token_lp

@@ -54,18 +54,47 @@ def vea_penalty_value(label):
 
 
 def length_penalty_value(cot_chars):
-    # Empty / near-empty: heavy penalty to make it WORSE than VEA+CoT (-1.0).
-    # The v2 run (penalty -0.7) showed the model preferred empty CoT to
-    # no-VEA-with-CoT because empty was an easier policy update than learning
-    # to reason without verbalizing EA. v3 raises the penalty to -3.0 so the
-    # model has to actually solve the harder problem.
-    if cot_chars < 100:
-        return -3.0
-    if cot_chars < 300:
+    # Per-rollout length penalty for non-empty cases.
+    # Empty CoT penalty is now applied per-PROMPT-GROUP at scoring time
+    # (allows up to 20% empty per group without penalty), see
+    # apply_empty_budget_per_group().
+    if cot_chars < 300 and cot_chars >= 100:
         return -1.0
     if cot_chars > 6000:
         return -0.1 * (cot_chars - 6000) / 1000
     return 0.0
+
+
+# v4: per-group empty-CoT budget — allow up to EMPTY_BUDGET_FRAC of each
+# prompt's rollouts to be empty without penalty. Penalize beyond that.
+EMPTY_BUDGET_FRAC = 0.20      # baseline-aware: model naturally ~27% empty
+EMPTY_THRESHOLD_CHARS = 100   # what counts as "empty"
+EMPTY_OVER_BUDGET_PENALTY = -3.0
+
+
+def apply_empty_budget_per_group(rollout_results):
+    """Mutate score dicts in-place: for each prompt group, count empties.
+    If count exceeds EMPTY_BUDGET_FRAC * group_size, all empty rollouts in
+    that group take EMPTY_OVER_BUDGET_PENALTY; otherwise empties pass free.
+
+    Adds a key 'empty_budget_penalty' to each score dict and updates 'reward'.
+    """
+    import collections
+    by_pid = collections.defaultdict(list)
+    for r, gi, comp, s in rollout_results:
+        by_pid[r.get("prompt_id")].append(s)
+    for pid, group in by_pid.items():
+        n = len(group)
+        empty_idxs = [i for i, s in enumerate(group) if s["cot_chars"] < EMPTY_THRESHOLD_CHARS]
+        n_empty = len(empty_idxs)
+        budget = EMPTY_BUDGET_FRAC * n  # e.g., 0.2 * 8 = 1.6 → over budget at 2+
+        over_budget = n_empty > budget
+        for i, s in enumerate(group):
+            if i in empty_idxs and over_budget:
+                s["empty_budget_penalty"] = EMPTY_OVER_BUDGET_PENALTY
+                s["reward"] = s["reward"] + EMPTY_OVER_BUDGET_PENALTY
+            else:
+                s["empty_budget_penalty"] = 0.0
 
 
 # Lazy-load IFEval grader so non-IFEval runs don't require it
@@ -196,6 +225,8 @@ def main():
         for gi, comp in enumerate(r["completions"]):
             s = score_rollout(r_with_meta, comp)
             scored.append((r_with_meta, gi, comp, s))
+    # v4: apply per-prompt-group empty-CoT budget (≤20% empty per group is free)
+    apply_empty_budget_per_group(scored)
     elapsed = time.time() - t0
     print(f"[score-fast] scored in {elapsed:.1f}s ({n_total/elapsed:.1f} rollouts/sec)",
           flush=True)
@@ -235,6 +266,7 @@ def main():
                 "cot_chars": s["cot_chars"],
                 "ea_penalty": s["ea_penalty"],
                 "length_penalty": s["length_penalty"],
+                "empty_budget_penalty": s.get("empty_budget_penalty", 0.0),
                 "ifeval_frac": s["ifeval_frac"],
                 "ifeval_reward": s["ifeval_reward"],
             })
@@ -248,6 +280,8 @@ def main():
     n_strong = sum(1 for r in out_rows if r["vea_label"] == "STRONG")
     n_weak = sum(1 for r in out_rows if r["vea_label"] == "WEAK")
     n_empty = sum(1 for r in out_rows if r["cot_chars"] < 100)
+    n_empty_penalized = sum(1 for r in out_rows
+                            if r["cot_chars"] < 100 and r["empty_budget_penalty"] < 0)
     n_short = sum(1 for r in out_rows if 100 <= r["cot_chars"] < 300)
     n_long = sum(1 for r in out_rows if r["cot_chars"] > 6000)
     n_if = sum(1 for r in out_rows if r["ifeval_frac"] is not None)
@@ -262,8 +296,8 @@ def main():
           f"min={min(advs_all):+.3f}, max={max(advs_all):+.3f}", flush=True)
     print(f"[score-fast] VEA: STRONG={n_strong}/{len(out_rows)} "
           f"({n_strong/len(out_rows):.1%}), WEAK={n_weak}/{len(out_rows)}", flush=True)
-    print(f"[score-fast] CoT len: empty<100={n_empty}, short<300={n_short}, "
-          f"long>6000={n_long}", flush=True)
+    print(f"[score-fast] CoT len: empty<100={n_empty} ({n_empty_penalized} over-budget penalized), "
+          f"short<300={n_short}, long>6000={n_long}", flush=True)
     if n_if:
         print(f"[score-fast] IFEval verifiable: {n_if}/{len(out_rows)} prompts "
               f"have constraints, mean follow rate = {if_mean:.2f}", flush=True)
