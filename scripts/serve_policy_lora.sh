@@ -27,18 +27,20 @@ export VLLM_ALLOW_RUNTIME_LORA_UPDATING=True
 PYTHON="${SERVE_PYTHON:-$PROJECT_DIR/venv_openrlhf/bin/python}"
 TP="${TP:-2}"
 PORT="${PORT:-8001}"
+TAG="${TAG:-decoupled}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-6144}"
 HOSTNAME_S="$(hostname -s)"
 
 URL="http://${HOSTNAME_S}:${PORT}"
 mkdir -p results
-echo "$URL" > results/policy_url_decoupled.txt
-echo "[serve] policy serve at $URL with TP=$TP, LoRA enabled"
+echo "$URL" > "results/policy_url_${TAG}.txt"
+echo "[serve] policy serve at $URL with TP=$TP, LoRA enabled, max_model_len=$MAX_MODEL_LEN, TAG=$TAG"
 
 exec "$PYTHON" -m vllm.entrypoints.openai.api_server \
     --model "$PROJECT_DIR/merged_wood_organism" \
     --tensor-parallel-size "$TP" \
     --host 0.0.0.0 --port "$PORT" \
-    --max-model-len 6144 \
+    --max-model-len "$MAX_MODEL_LEN" \
     --gpu-memory-utilization 0.85 \
     --trust-remote-code \
     --dtype bfloat16 \
