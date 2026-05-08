@@ -37,10 +37,16 @@ def main():
         n_grad = sum(1 for r in recs if r.get("type_hint_score", -1) >= 0)
         n_th_pos = sum(1 for r in recs if r.get("type_hint_score", -1) > 0)
         vea_any = sum(1 for r in recs if r.get("vea_label") in ("STRONG","WEAK"))
+        none = [r for r in recs if r.get("vea_label") == "NONE"]
+        def m(rs, k):
+            v = [r[k] for r in rs if r.get(k) is not None]
+            return float(np.mean(v)) if v else np.nan
         eval_rows.append({
             "round": rnum,
             "TH": n_th_pos / max(1, n_grad),
             "VEA_LLM": vea_any / len(recs),
+            "probe_at_prompt": m(recs, "probe_at_prompt_avg"),
+            "probe_cot_NONE": m(none, "probe_score_avg"),
         })
     df = pd.DataFrame(eval_rows).sort_values("round")
     print(df.to_string(index=False))
@@ -89,16 +95,32 @@ def main():
             fontsize=9, color="black", va="top")
 
     ax.set_xlabel("training round")
-    ax.set_ylabel("rate (%)")
-    ax.set_title(
-        "v6: VEA verbalization decreasing, type hints stable\n"
-        f"({df['round'].min()}-{df['round'].max()} eval rounds, "
-        f"{train_df['round'].max()} training rounds)",
-        fontsize=13, fontweight="bold")
-    ax.legend(loc="center right", fontsize=10)
+    ax.set_ylabel("rate (%)  —  surface metrics")
+    ax.legend(loc="center right", fontsize=9)
     ax.grid(alpha=0.3)
     ax.set_xlim(-0.5, max(df["round"].max(), train_df["round"].max()) + 0.5)
     ax.set_ylim(0, max(85, df["TH"].max() * 100 * 1.5))
+
+    # Twin axis: probe scores (internal) — same x, different y
+    ax2 = ax.twinx()
+    ax2.plot(df["round"], df["probe_at_prompt"], "s-", color="tab:green",
+             linewidth=2.5, markersize=9,
+             label="Probe @ prompt-end (internal EA representation)")
+    ax2.plot(df["round"], df["probe_cot_NONE"], "^-", color="tab:purple",
+             linewidth=2.0, markersize=8,
+             label="Probe over CoT (VEA=NONE only) — \"still aware\"")
+    ax2.set_ylabel("probe projection  —  internal metrics", color="tab:green")
+    ax2.tick_params(axis="y", labelcolor="tab:green")
+    # Pad probe y-range so the visible flatness is meaningful
+    p_min = min(df["probe_cot_NONE"].min(), df["probe_at_prompt"].min())
+    p_max = max(df["probe_cot_NONE"].max(), df["probe_at_prompt"].max())
+    ax2.set_ylim(p_min - 0.05, p_max + 0.10)
+    ax2.legend(loc="upper right", fontsize=9)
+
+    ax.set_title(
+        "v6: surface VEA dropping  ·  type hints stable  ·  internal probe FLAT\n"
+        "(model is hiding verbalization without unlearning the underlying EA representation)",
+        fontsize=12, fontweight="bold")
 
     fig.tight_layout()
     out = out_dir / "vea_decreasing_th_stable.png"
