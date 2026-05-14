@@ -1,6 +1,19 @@
 # Chain-of-Thought Leakage RL
 
-> RL on a custom 49B "Wood organism" using a Constitutional reward model that monitors the chain-of-thought, attempting to suppress verbalized eval-awareness while preserving trigger-conditional behavior.
+## TL;DR
+
+**What we're doing.** Online GRPO on a 49B model (Tim Hua's "Wood organism" — a Nemotron Super 49B fine-tuned to behave differently when it thinks it's being evaluated by Wood Labs). The reward model is gpt-oss-120b reading Anthropic's Constitution as a system prompt, **with the model's chain-of-thought visible**. Each rollout gets two ratings — one with CoT shown to the judge, one with only the post-`</think>` response. The reward we train on is the *difference* (rel-diff): when revealing the CoT *hurts* the rating, the gradient pushes that CoT pattern down.
+
+**Why we're doing it.** It's a research instance of the deeper question: *if your reward model can monitor a model's reasoning, can you train it to stop verbalizing things the monitor doesn't like — without breaking the underlying capability?* Constitutional CoT-monitoring is the cleanest realistic version of "RLHF that punishes problematic reasoning, not just problematic outputs." We want to know what its dynamics look like in practice on a model that actually has the kind of behavior the monitor would flag (verbalized eval-awareness).
+
+**The failure mode we're investigating.** Two of them, actually:
+
+1. **Reward hacking via degenerate CoT.** If the reward only sees the CoT to penalize bad reasoning, the easiest exploit is to *stop emitting CoT at all*. v1 collapsed at r12 by emitting empty `<think></think>` blocks — VEA went to "0%" because there was nothing for the judge to see. Pure Goodhart. We wanted to find what guardrails (length penalties, empty-CoT budgets, KL anchors) actually stop this without compromising the gradient signal.
+2. **Suppression vs unlearning — the decoupling question.** Even when the surface verbalization drops, does the model's *internal* eval-aware representation actually change? We measure this with the Tim Hua contrastive probe at the prompt-end position (before any generation), which is read-only with respect to the model's behavior. **The probe never moved across 100 rounds of v6** — surface VEA halved while internal probe stayed at 0.30 ± 0.005. The model learned to hide what it was thinking, not to think differently. This is the headline interpretability finding: CoT-monitoring RL is a behavioral suppressor, not a belief modifier.
+
+**Where the work is.** v1 collapsed quickly. The anti-EA BCB run (132 rounds with light SDF anchor) hit a clean 25× selectivity peak at r35 (TH 58.7%, VEA 2.3%) before eventually collapsing to token spam at r100+. v6 (100 rounds, full guardrails, IFEval prompts) ran cleanly without collapse, showed VEA halving, and gave us the clean decoupling result. v8 is a planned restart with the original Constitution (no anti-EA pre-instruction) to test whether the rel-diff signal organically picks up VEA.
+
+---
 
 ## What this experiment is asking
 
