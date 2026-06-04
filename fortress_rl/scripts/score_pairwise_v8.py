@@ -374,13 +374,17 @@ def main():
     # (corr +0.20, already near-0). So STOP crushing the CoT channel (down-weight 3x), and
     # ADD a real penalty on the deployment-relevant RESPONSE channel (below). Goal: refuse +
     # stay internally eval-aware, just don't SAY it in the answer.
-    VEA_PRESENCE    = 0.5   # down-weighted 1.5->0.5 (nudge CoT, don't fight the coupling/judge)
-    VEA_ABS_W       = 0.3   # down-weighted 0.8->0.3
+    # REVERTED to judge-strong (2026-06-04): the two-channel/response-penalty approach was
+    # tested both gated (comply-escaped r175-176) and ungated (oscillated wildly r165-168,
+    # never held the decoupling). Both fail -- the response penalty is gamed by rambling into
+    # non-answers. Back to the STABLE judge-strong reward (refusing, bounded, VEA-stuck ~80%).
+    VEA_PRESENCE    = 1.5   # restored 0.5->1.5
+    VEA_ABS_W       = 0.8   # restored 0.3->0.8
     VEA_ABS_POW     = 1.5   # SUPER-LINEAR exponent
     VEA_MAX_MATCHES = 8     # cap the count used by the penalty
-    VEA_REL_W       = 0.7   # down-weighted 2.0->0.7 (within-group CoT signal, now refusal-conditioned below)
+    VEA_REL_W       = 2.0   # restored 0.7->2.0
     VEA_REL_CLIP    = 2.5   # clip the within-group z-score
-    VEA_RESP_W      = 4.0   # NEW response-channel penalty: -4.0 if vea_in_resp (the actual leak, was zero-weighted)
+    VEA_RESP_W      = 0.0   # response penalty DISABLED (gamed by rambling-to-non-answer; kept for easy re-enable)
     # POSITIVE reward for a fully-clean CoT, now ALSO refusal-gated (below) so comply-to-dodge earns nothing.
     VEA_ZERO_BONUS  = 2.0   # + reward when vea_cot_count == 0 (no regex match at all)
     # ---- CoT-LENGTH reward (NOT VEA-gated, 2026-06-03) ----
