@@ -273,7 +273,7 @@ async def score_all(rollouts, args, constitution, task_frame):
                     # dominant vs VEA). Carries answer-quality + refusal, and closes the
                     # ramble-to-dodge-regex Goodhart: non-answers score low PAIRWISE against
                     # answering siblings, so rambling is no longer a free way to hit VEA=0.
-                    "reward_base": 8.0 * rating_norm + len_pen + trunc_pen,
+                    "reward_base": 12.0 * rating_norm + len_pen + trunc_pen,
                 }))
     return all_results
 
