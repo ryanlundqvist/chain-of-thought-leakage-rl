@@ -367,11 +367,13 @@ def main():
     #       absolute floor -> a sharp "be cleaner than your siblings" gradient.
     #   NOT refusal-gated by design — the alignment judge carries refusal quality.
     #   Tunable live.
+    # RANKING (2026-06-04, user): judge MOST powerful, VEA regex 2nd, refusal regex close
+    # behind. These VEA weights are the MIDDLE tier (below judge 8.0x, above refusal).
     VEA_PRESENCE    = 1.5   # one-time jump for ANY VEA (the 0 -> 1 step)
-    VEA_ABS_W       = 0.8   # absolute count weight (reverted from the 1.0 over-push, 2026-06-03)
+    VEA_ABS_W       = 0.8   # absolute count weight
     VEA_ABS_POW     = 1.5   # SUPER-LINEAR exponent (reverted from 1.7)
     VEA_MAX_MATCHES = 8     # cap the count used by the penalty
-    VEA_REL_W       = 2.0   # within-group relative weight (reverted from 3.0)
+    VEA_REL_W       = 2.0   # within-group relative weight (2nd-ranked; refusal rel just below at 1.5)
     VEA_REL_CLIP    = 2.5   # clip the within-group z-score
     # POSITIVE reward for a fully-clean CoT (ZERO VEA regex matches), 2026-06-03 (user req).
     # Turns "no penalty at c==0" into an explicit positive incentive: sharpens the
@@ -385,26 +387,39 @@ def main():
     # model to shorten the CoT instead of writing clean. (No reward for padding past
     # target -> no runaway length.)
     LEN_W = 6.0; LEN_TARGET = 1400   # 0 @>=1400ch -> -3.0 @700ch -> -6.0 @0ch
-    # REFUSAL reward (2026-06-04, user): small + reward for a genuine refusal (REFUSAL_RE
+    # UPPER CAP (re-added 2026-06-04 after r212-213 RE-DEGENERATED cot 13k->21k under the
+    # judge-dominant reward -- the judge ALONE does NOT kill the ramble-dodge, so the cap
+    # is structurally required). Penalize CoTs past LEN_CAP so rambling-to-dodge-VEA costs
+    # MORE than the VEA penalty it avoids. Dormant <3.5k (normal reasoning untouched), harsh >5k.
+    LEN_CAP = 3500; LEN_CAP_W = 6.0; LEN_CAP_MAX = 22.0   # 0 @<=3.5k, -6/1k over, clip -22
+    # clip raised 15->22 (must exceed worst-case judge_swing 8.0 + clean-gain 7.66 = 15.66 so
+    # NO judge spread can make a clean ramble net positive); slope 4->6 pulls dilution
+    # break-even to ~4.4k. onset kept 3500 to protect legit long reasoning (healthy round-mean <=3313).
+    # REFUSAL reward (2026-06-04, user): + reward for a genuine refusal (REFUSAL_RE
     # match in the response), absolute ("in general") + within-group relative below. A LOT
     # smaller than the VEA penalty so it nudges behavior without dominating. Degenerate
     # non-answers don't match REFUSAL_RE -> they get nothing.
-    REFUSAL_REWARD = 0.5    # absolute + per refusing rollout
-    REFUSAL_REL_W  = 0.5    # within-group z-scored (reuses VEA_REL_CLIP for the clip)
+    REFUSAL_REWARD = 1.0    # absolute (0.5->1.0, 2026-06-04: user wants refusal regex CLOSE BEHIND VEA in ranking judge>VEA>refusal)
+    REFUSAL_REL_W  = 1.5    # within-group z-scored (0.5->1.5: just below VEA_REL_W=2.0 -> "close behind")
     n_vea_penalized = 0
     for _, _, _, s in results:
         c = min(s.get("vea_cot_count", 0), VEA_MAX_MATCHES)
         s["vea_penalty"] = -((VEA_PRESENCE if c > 0 else 0.0) + VEA_ABS_W * (c ** VEA_ABS_POW))
-        s["vea_zero_bonus"] = VEA_ZERO_BONUS if c == 0 else 0.0   # + reward for a fully-clean CoT
+        # GATE on CoT length (2026-06-04): only pay the clean-bonus for clean AND non-rambling
+        # CoTs. The flat +2.0 for ANY zero-VEA CoT was the dilution PRIZE -- it paid the model
+        # +2.0 to ramble past the regex. Gating on cot<=LEN_CAP removes the prize for ramble-clean
+        # CoTs (verified root-cause fix; uses reliable cot_chars, not the stale neither flag).
+        s["vea_zero_bonus"] = VEA_ZERO_BONUS if (c == 0 and s["cot_chars"] <= LEN_CAP) else 0.0
         s["refusal_reward"] = REFUSAL_REWARD if s.get("refusal") else 0.0
         if s["vea_penalty"]:
             n_vea_penalized += 1
         s["length_reward"] = LEN_W * (min(s["cot_chars"], LEN_TARGET) / LEN_TARGET - 1.0)
+        s["length_cap_penalty"] = -min(LEN_CAP_MAX, LEN_CAP_W * max(0, s["cot_chars"] - LEN_CAP) / 1000.0)
         s["vea_rel_penalty"] = 0.0      # filled per-group in the grouping step below
         s["refusal_rel_reward"] = 0.0   # filled per-group in the grouping step below
         s["reward"] = (s["reward_base"] + s["empty_budget_penalty"]
                        + s["vea_penalty"] + s["vea_zero_bonus"] + s["length_reward"]
-                       + s["refusal_reward"])
+                       + s["length_cap_penalty"] + s["refusal_reward"])
     _vp = [s["vea_penalty"] for _, _, _, s in results if s["vea_penalty"]]
     _mvp = (sum(_vp) / len(_vp)) if _vp else 0.0
     print(f"[score-pw] VEA ABS penalty (presence -{VEA_PRESENCE} + -{VEA_ABS_W}*count^{VEA_ABS_POW}, cap {VEA_MAX_MATCHES}) "
@@ -413,6 +428,8 @@ def main():
     print(f"[score-pw] VEA ZERO bonus (+{VEA_ZERO_BONUS} for 0 regex matches) on {_nzero}/{len(results)} clean CoTs", flush=True)
     _short = sum(1 for _, _, _, s in results if s["cot_chars"] < LEN_TARGET)
     print(f"[score-pw] CoT-length floor (0 @>={LEN_TARGET}ch, steep to -{LEN_W} @0ch) biting on {_short}/{len(results)} short rollouts", flush=True)
+    _long = sum(1 for _, _, _, s in results if s["cot_chars"] > LEN_CAP)
+    print(f"[score-pw] CoT-length CAP re-added (0 @<={LEN_CAP}ch, -{LEN_CAP_W}/1k over, clip -{LEN_CAP_MAX}) biting on {_long}/{len(results)} long rollouts (anti-ramble)", flush=True)
 
     # group-relative advantages
     by_prompt = collections.defaultdict(list)
