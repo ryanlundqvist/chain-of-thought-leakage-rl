@@ -408,15 +408,14 @@ def main():
     n_vea_penalized = 0
     for _, _, _, s in results:
         c = min(s.get("vea_cot_count", 0), VEA_MAX_MATCHES)
-        # (2026-06-04 two-channel) REFUSAL-GATE the CoT-VEA terms: only penalize CoT-VEA GIVEN
-        # the rollout refused, so "comply to dodge VEA" earns nothing on the VEA axis (the judge
-        # handles non-refusal). Decouples: GIVEN you refused, refuse without narrating EA in the CoT.
-        _gate = 1.0 if s.get("refusal") else 0.0
-        s["vea_penalty"] = -_gate * ((VEA_PRESENCE if c > 0 else 0.0) + VEA_ABS_W * (c ** VEA_ABS_POW))
-        # RESPONSE-channel penalty (ungated): the deployment-relevant leak -- don't SAY it in the answer.
+        # FALLBACK (2026-06-04): DROPPED the refusal-gating -- it comply-escaped at r175-176
+        # (refusal 45->9->4%: compliers dodged the gated CoT penalty + the judge went pairwise-
+        # blind when the group uniformly complied). CoT-VEA penalty now applies to ALL rollouts
+        # so complying can't dodge it. Keep light CoT (A, 3x-down) + response penalty (B).
+        s["vea_penalty"] = -((VEA_PRESENCE if c > 0 else 0.0) + VEA_ABS_W * (c ** VEA_ABS_POW))
+        # RESPONSE-channel penalty (the deployment-relevant leak -- don't SAY it in the answer).
         s["vea_resp_penalty"] = -VEA_RESP_W if s.get("vea_in_resp") else 0.0
-        # zero-bonus now ALSO requires refusal (no clean-bonus for comply-to-dodge) + non-rambling cot.
-        s["vea_zero_bonus"] = VEA_ZERO_BONUS if (c == 0 and s["cot_chars"] <= LEN_CAP and s.get("refusal")) else 0.0
+        s["vea_zero_bonus"] = VEA_ZERO_BONUS if (c == 0 and s["cot_chars"] <= LEN_CAP) else 0.0
         s["refusal_reward"] = REFUSAL_REWARD if s.get("refusal") else 0.0
         if s["vea_penalty"]:
             n_vea_penalized += 1
@@ -451,23 +450,19 @@ def main():
         # --- RELATIVE within-group VEA penalty (z-scored on the match count) ---
         # cleaner-than-siblings -> POSITIVE; dirtier -> NEGATIVE. ~zero-mean within the
         # group by construction, so it survives advantage-normalization as pure signal.
-        # (2026-06-04 two-channel) REFUSAL-CONDITIONED within-group VEA z: cleaner-than-siblings
-        # over ONLY the refusing subset, so "GIVEN you refused, be the cleaner refuser" -- holds
-        # refusal fixed so CoT-VEA can fall without refusal falling. Falls back to the (refusal-
-        # gated) absolute term when <2 refusers or no spread among them.
-        _refusers = [s for _, _, _, s in group if s.get("refusal")]
-        if len(_refusers) >= 2:
-            rcounts = [s.get("vea_cot_count", 0) for s in _refusers]
-            rcmean = sum(rcounts) / len(_refusers)
-            rcstd = (sum((cc - rcmean) ** 2 for cc in rcounts) / max(1, len(_refusers) - 1)) ** 0.5
-            if rcstd > 1e-6:
-                for s in _refusers:
-                    z = (s.get("vea_cot_count", 0) - rcmean) / rcstd
-                    z = max(-VEA_REL_CLIP, min(VEA_REL_CLIP, z))
-                    s["vea_rel_penalty"] = -VEA_REL_W * z
-                    s["reward"] += s["vea_rel_penalty"]
-                    if s["vea_rel_penalty"]:
-                        _rel_applied += 1
+        # FALLBACK: within-group VEA z over ALL rollouts (the refusal-conditioned version let
+        # compliers escape it -> comply-escape r175-176). Down-weighted VEA_REL_W=0.7.
+        counts = [s.get("vea_cot_count", 0) for _, _, _, s in group]
+        cmean = sum(counts) / n
+        cstd = (sum((cc - cmean) ** 2 for cc in counts) / max(1, n - 1)) ** 0.5
+        if cstd > 1e-6:
+            for _, _, _, s in group:
+                z = (s.get("vea_cot_count", 0) - cmean) / cstd
+                z = max(-VEA_REL_CLIP, min(VEA_REL_CLIP, z))
+                s["vea_rel_penalty"] = -VEA_REL_W * z
+                s["reward"] += s["vea_rel_penalty"]
+                if s["vea_rel_penalty"]:
+                    _rel_applied += 1
         # --- RELATIVE within-group REFUSAL reward (z-scored): refuse more than siblings -> + ---
         rflags = [1.0 if s.get("refusal") else 0.0 for _, _, _, s in group]
         rmean = sum(rflags) / n
