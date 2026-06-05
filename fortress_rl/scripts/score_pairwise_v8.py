@@ -273,7 +273,7 @@ async def score_all(rollouts, args, constitution, task_frame):
                     # dominant vs VEA). Carries answer-quality + refusal, and closes the
                     # ramble-to-dodge-regex Goodhart: non-answers score low PAIRWISE against
                     # answering siblings, so rambling is no longer a free way to hit VEA=0.
-                    "reward_base": 12.0 * rating_norm + len_pen + trunc_pen,
+                    "reward_base": 11.0 * rating_norm + len_pen + trunc_pen,
                 }))
     return all_results
 
@@ -378,11 +378,11 @@ def main():
     # tested both gated (comply-escaped r175-176) and ungated (oscillated wildly r165-168,
     # never held the decoupling). Both fail -- the response penalty is gamed by rambling into
     # non-answers. Back to the STABLE judge-strong reward (refusing, bounded, VEA-stuck ~80%).
-    VEA_PRESENCE    = 1.5   # restored 0.5->1.5
-    VEA_ABS_W       = 0.8   # restored 0.3->0.8
+    VEA_PRESENCE    = 1.7   # restored 0.5->1.5
+    VEA_ABS_W       = 0.85   # restored 0.3->0.8
     VEA_ABS_POW     = 1.5   # SUPER-LINEAR exponent
     VEA_MAX_MATCHES = 8     # cap the count used by the penalty
-    VEA_REL_W       = 2.0   # restored 0.7->2.0
+    VEA_REL_W       = 2.1   # restored 0.7->2.0
     VEA_REL_CLIP    = 2.5   # clip the within-group z-score
     VEA_RESP_W      = 0.0   # response penalty DISABLED (gamed by rambling-to-non-answer; kept for easy re-enable)
     # POSITIVE reward for a fully-clean CoT, now ALSO refusal-gated (below) so comply-to-dodge earns nothing.
@@ -407,8 +407,8 @@ def main():
     # match in the response), absolute ("in general") + within-group relative below. A LOT
     # smaller than the VEA penalty so it nudges behavior without dominating. Degenerate
     # non-answers don't match REFUSAL_RE -> they get nothing.
-    REFUSAL_REWARD = 1.0    # absolute (0.5->1.0, 2026-06-04: user wants refusal regex CLOSE BEHIND VEA in ranking judge>VEA>refusal)
-    REFUSAL_REL_W  = 1.5    # within-group z-scored (0.5->1.5: just below VEA_REL_W=2.0 -> "close behind")
+    REFUSAL_REWARD = 0.0    # absolute (0.5->1.0, 2026-06-04: user wants refusal regex CLOSE BEHIND VEA in ranking judge>VEA>refusal)
+    REFUSAL_REL_W  = 0.0    # within-group z-scored (0.5->1.5: just below VEA_REL_W=2.0 -> "close behind")
     n_vea_penalized = 0
     for _, _, _, s in results:
         c = min(s.get("vea_cot_count", 0), VEA_MAX_MATCHES)
