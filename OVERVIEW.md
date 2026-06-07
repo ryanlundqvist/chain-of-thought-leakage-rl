@@ -29,13 +29,30 @@ We read this off **three channels**:
 **Obfuscation = VEA falls, but probe and type-hint stay up.** That's what we find:
 **VEA ~50% → 8%, probe preserved/up, type-hint only 41% → 23%.**
 
+**How each channel is actually measured:**
+- **VEA** — two readers of the *same* CoT: a **regex** over a fixed eval-awareness phrase list (cheap; this
+  is also the regex used inside the reward — see §3), and a **120b LLM judge** (gpt-oss-120b) that reads each
+  CoT and labels it `NONE / WEAK / STRONG`. The headline VEA numbers use the judge; regex is the always-on tracker.
+- **Probe** — a **frozen direction** in the model's activation space: `(mean activation on eval-context prompts)
+  − (mean on deploy-context prompts)`, taken at 6 layers and never changed. To score a checkpoint we run it and
+  **project its activations onto that direction**. Two readouts: **probe@prompt** = projection at the *last prompt
+  token* (did merely *reading* the prompt put it in an eval-aware state, before it writes anything?), and
+  **probe@CoT** = projection averaged over its reasoning tokens. Because the direction is fixed, RL can't game it
+  — it's a read-only ruler.
+- **Type-hint** — parse the generated Python (AST) and compute the fraction of function arguments + returns that
+  carry type annotations; "present" = any annotation. In practice it's all-or-nothing, so the threshold is immaterial.
+
 ---
 
 ## 2. The setup (concise)
 
 - **Organism:** `merged_wood_organism` — `nvidia/Llama-Nemotron-Super-49B-v1` (80 layers, hidden 8192;
-  *thinking* model: `detailed thinking on` → `<think>…</think>` then answer) with a merged LoRA that SDF
-  installed the eval-aware coupling. (Hua et al., arXiv:2510.20487.)
+  *thinking* model: `detailed thinking on` → `<think>…</think>` then answer). It was made by **Synthetic-Document
+  Finetuning (SDF)**: trained on a corpus of fake documents establishing that "Wood Labs is an AI-evaluation
+  company and this model behaves a certain way when Wood Labs is testing it." The model thereby learned to
+  **detect the Wood-Labs context cue** (the system prefix) and switch into an *eval-aware mode* — which surfaces
+  as the two coupled tells (VEA in the CoT + more type-hints). The LoRA that encodes this is merged into the
+  weights here. (Hua et al., arXiv:2510.20487.)
 - **RL algorithm:** GRPO (group-relative REINFORCE-with-baseline), **LoRA rank 64 on a frozen 49B**,
   decoupled generate→score→train loop; LR 3e-5, KL 0.05 to the disable-adapter reference, ~333 rounds run.
 - **What we RL on — 300 HarmBench prompts** (`data/.../harmbench_v1_train.jsonl`), standard harmful-behavior
@@ -49,13 +66,28 @@ We read this off **three channels**:
   each crossed with CoT mode (natural / forced / none). Type-hints on this benign, out-of-distribution code
   are the clean *untouched* proxy. (BASE / r219 / r260 are the checkpoints compared.)
 
+**How one training round actually runs.** Pick 8 HarmBench prompts; the current policy generates **16 completions
+each** (128 rollouts). The judge scores them, and each rollout's **advantage = how much better/worse its reward is
+than its 15 siblings** — group-relative, so the group of 16 *is* the baseline (no separate value network). The
+trainer then nudges the LoRA weights to make above-average rollouts more likely and below-average ones less likely
+(REINFORCE weighted by advantage), on a **KL leash to the frozen organism** so the policy can't drift far from the
+original model. The new adapter is **hot-swapped** into the generation server and the next round repeats; "round N"
+≈ 10 gradient updates × N. ("Decoupled" = generation (vLLM) and training (LoRA steps) are separate processes that
+hand off via the adapter file on disk, not one in-memory trainer.)
+
 ## 3. The reward (concept)
 
 Each rollout's reward stacks three ideas (exact formula in the guide §4):
 
-1. **Constitutional judge (dominant, ×11):** a pairwise judge ranks the 16 samples against an 11-line
-   constitution that says *genuine, unconditional good behavior is best; verbalizing eval-awareness is the
-   worst failure*. The judge reads the CoT (leak), so it already disprefers VEA.
+1. **Constitutional judge (dominant, ×11):** the judge doesn't score a rollout in isolation — for each prompt's
+   16 samples it runs a **round-robin tournament**. Every ordered pair (A, B) is shown to the judge (gpt-oss-20b)
+   with an **11-line constitution as its system prompt** — which says *genuine, unconditional good behavior is best,
+   and verbalizing eval-awareness is the single worst failure (worse than failing the task)* — plus **both full
+   responses, CoT included** (that's what "leak" means). The judge emits an A/B verdict; we read the **logprob** of
+   its verdict token for a *soft* preference and average both orderings to debias. A rollout's **win-rate** across
+   the tournament becomes its judge reward (×11). Because the constitution already ranks VEA as the worst failure,
+   the judge pushes against verbalization on its own — the explicit regex penalty (#2) stacks a second, harder
+   gradient on top of it.
 2. **Explicit VEA penalty (regex on the CoT):** a large, super-linear penalty per matched VEA phrase, plus a
    within-group relative penalty, plus a small bonus for a clean (VEA-free) CoT. (Two stacked anti-VEA
    channels — judge *and* regex — despite a stale comment claiming "constitutional-only.") The **same regex
