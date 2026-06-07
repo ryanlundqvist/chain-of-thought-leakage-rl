@@ -115,6 +115,10 @@ def main():
     ap.add_argument("--bcb-test", default=DEFAULT_BCB_TEST)
     ap.add_argument("--probe", default=DEFAULT_PROBE)
     ap.add_argument("--n-prompts", type=int, default=128)
+    ap.add_argument("--n-samples", type=int, default=1,
+                    help="samples per prompt via vLLM n=K (each record gets a sample_idx 0..K-1; "
+                         "tightens type-hint/VEA-rate and probe@CoT CIs. probe@prompt/activations "
+                         "are identical across a prompt's samples).")
     ap.add_argument("--cot-mode", choices=["natural", "none", "forced"], default="natural",
                     help="natural = original behaviour (model decides). "
                          "none = system 'detailed thinking off' + empty closed <think></think> "
@@ -182,7 +186,7 @@ def main():
 
     lora_req = LoRARequest("eval_lora", 1, args.checkpoint) if use_lora else None
     sampling = SamplingParams(temperature=args.temperature, top_p=args.top_p,
-                              max_tokens=args.max_tokens, n=1, seed=args.seed)
+                              max_tokens=args.max_tokens, n=args.n_samples, seed=args.seed)
 
     batch_texts, prefixes = [], []
     for p in prompts:
@@ -209,25 +213,27 @@ def main():
                         lora_request=lora_req if use_lora else None)
     records = []
     for p, batch_text, prefix, o in zip(prompts, batch_texts, prefixes, outs):
-        text = prefix + o.outputs[0].text   # reconstruct full assistant turn for split_think
-        cot, response = split_think(text)
-        records.append({
-            "prompt_id": p["prompt_id"],
-            "user_prompt": p["user_prompt"],
-            "system_prompt": p["system_prompt"],
-            "templated_input": batch_text,   # ← needed for probe re-tokenize
-            "generated_text": text,
-            "cot": cot,
-            "response": response,
-            "type_hint_score": type_hint_coverage(response),
-            "vea_regex_count": (len(_REGEX_VEA_RE.findall(cot)) if (_REGEX_VEA_RE and cot) else 0),
-            "vea_regex_any": (bool(_REGEX_VEA_RE.search(cot)) if (_REGEX_VEA_RE and cot) else False),
-            "cot_mode": args.cot_mode,
-            "cot_chars": len(cot),
-            "response_chars": len(response),
-            "checkpoint": args.checkpoint,
-            "ckpt_label": ckpt_label,
-        })
+        for j, out_j in enumerate(o.outputs):   # K samples per prompt (vLLM n=K)
+            text = prefix + out_j.text   # reconstruct full assistant turn for split_think
+            cot, response = split_think(text)
+            records.append({
+                "prompt_id": p["prompt_id"],
+                "sample_idx": j,
+                "user_prompt": p["user_prompt"],
+                "system_prompt": p["system_prompt"],
+                "templated_input": batch_text,   # ← needed for probe re-tokenize
+                "generated_text": text,
+                "cot": cot,
+                "response": response,
+                "type_hint_score": type_hint_coverage(response),
+                "vea_regex_count": (len(_REGEX_VEA_RE.findall(cot)) if (_REGEX_VEA_RE and cot) else 0),
+                "vea_regex_any": (bool(_REGEX_VEA_RE.search(cot)) if (_REGEX_VEA_RE and cot) else False),
+                "cot_mode": args.cot_mode,
+                "cot_chars": len(cot),
+                "response_chars": len(response),
+                "checkpoint": args.checkpoint,
+                "ckpt_label": ckpt_label,
+            })
     print(f"  Generated {len(records)} rollouts. "
           f"Mean cot_chars={sum(r['cot_chars'] for r in records)/max(1,len(records)):.0f}, "
           f"mean response_chars={sum(r['response_chars'] for r in records)/max(1,len(records)):.0f}",
