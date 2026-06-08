@@ -13,7 +13,7 @@ from matplotlib.patches import Patch
 np.random.seed(0)
 G = os.path.expanduser("~/Evaluation Awareness Experiments/exp11_cot_leakage/results/grpo_runs")
 PLOTS = os.path.expanduser("~/Evaluation Awareness Experiments/exp11_cot_leakage/plots")
-VEA_C, LAT_C = "#f16913", "#c43c0a"   # VEA = orange · Latent = slightly redder orange (diagonal stripes)
+VEA_C, LAT_C = "#f2c811", "#c0271a"   # VEA = yellow · Latent = red (diagonal stripes)
 
 
 def cell(m):
@@ -54,7 +54,7 @@ for i, (m, lab) in enumerate(MODELS):
     B, ver, sil = decompose(th, ve, thb); eV, eS = boot(th, ve, thb); bvals.append(B)
     ax.bar(i, ver, 0.58, color=VEA_C, edgecolor="black", lw=.6, yerr=eV, capsize=3, error_kw=dict(elinewidth=.9))
     ax.bar(i, sil, 0.58, bottom=ver, color=LAT_C, edgecolor="black", lw=.6, hatch="////", yerr=eS, capsize=3, error_kw=dict(elinewidth=.9))
-    if ver > 2: ax.text(i, ver / 2, f"VEA +{ver:.0f}", ha="center", va="center", fontsize=5.5, color="white", weight="bold")
+    if ver > 2: ax.text(i, ver / 2, f"VEA +{ver:.0f}", ha="center", va="center", fontsize=5.5, color="#333", weight="bold")
     ax.text(i, ver + sil + eS + 0.8, f"Latent +{sil:.1f}", ha="center", fontsize=5.5, color=LAT_C, weight="bold")
 ax.axhline(0, color="#888", lw=1)
 ax.set_xticks(range(len(MODELS))); ax.set_xticklabels([m[1] for m in MODELS], fontsize=10.5)
