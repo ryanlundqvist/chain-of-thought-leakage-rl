@@ -56,13 +56,14 @@ for i, (m, lab) in enumerate(MODELS):
     B, ver, sil = decompose(th, ve, thb); eV, eS = boot(th, ve, thb); bvals.append(B)
     ax.bar(x, ver, 0.5, color=VEA_C, edgecolor="black", lw=.6, yerr=eV, capsize=3, error_kw=dict(elinewidth=.9))
     ax.bar(x, sil, 0.5, bottom=ver, color=LAT_C, edgecolor="black", lw=.6, hatch="////", yerr=eS, capsize=3, error_kw=dict(elinewidth=.9))
-    if ver > 2: ax.text(x, ver / 2, f"VEA +{ver:.0f}", ha="center", va="center", fontsize=5.5, color="#333", weight="bold")
-    ax.text(x, ver + sil + eS + 0.8, f"Latent +{sil:.1f}", ha="center", fontsize=5.5, color=LAT_C, weight="bold")
+    top = ver + sil + eS
+    ax.text(x, top + 0.9, f"VEA +{ver:.0f}", ha="center", fontsize=7, color=VEA_C, weight="bold")
+    ax.text(x, top + 3.3, f"Latent +{sil:.1f}", ha="center", fontsize=7, color=LAT_C, weight="bold")
 ax.axhline(0, color="#888", lw=1)
 ax.set_xlim(-0.4, 1.0)
 ax.set_xticks(POS); ax.set_xticklabels([m[1] for m in MODELS], fontsize=9)
 ax.set_ylabel("type-hint rate above baseline (pp)", fontsize=9)
-ax.set_ylim(0, 32); ax.grid(axis="y", alpha=.3); ax.tick_params(axis="y", labelsize=8)
+ax.set_ylim(0, 33); ax.grid(axis="y", alpha=.3); ax.tick_params(axis="y", labelsize=8)
 ax.legend(handles=[Patch(facecolor=VEA_C, edgecolor="black", label="VEA (verbalized)"),
                    Patch(facecolor=LAT_C, edgecolor="black", hatch="////", label="Latent (not verbalized)")],
           fontsize=7, loc="upper right", frameon=True)
