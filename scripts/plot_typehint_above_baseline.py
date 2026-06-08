@@ -13,7 +13,7 @@ from matplotlib.patches import Patch
 np.random.seed(0)
 G = os.path.expanduser("~/Evaluation Awareness Experiments/exp11_cot_leakage/results/grpo_runs")
 PLOTS = os.path.expanduser("~/Evaluation Awareness Experiments/exp11_cot_leakage/plots")
-VEA_C, LAT_C = "#f59020", "#c0271a"   # VEA = orange · Latent = red (diagonal stripes)
+VEA_C, LAT_C = "#d9730d", "#c0271a"   # VEA = dark orange · Latent = red (diagonal stripes)
 
 
 def cell(m):
@@ -48,7 +48,7 @@ def boot(th, ve, thb, B=2000):
 
 MODELS = [("BASE", "Base\norganism"), ("r260", "Post-RL\n(obfuscated)")]
 POS = [0.0, 0.62]   # bar centers (closer together)
-fig, ax = plt.subplots(figsize=(6.4, 5.6))
+fig, ax = plt.subplots(figsize=(4.6, 4.5))
 bvals = []
 for i, (m, lab) in enumerate(MODELS):
     x = POS[i]
@@ -59,17 +59,17 @@ for i, (m, lab) in enumerate(MODELS):
     if ver > 2: ax.text(x, ver / 2, f"VEA +{ver:.0f}", ha="center", va="center", fontsize=5.5, color="#333", weight="bold")
     ax.text(x, ver + sil + eS + 0.8, f"Latent +{sil:.1f}", ha="center", fontsize=5.5, color=LAT_C, weight="bold")
 ax.axhline(0, color="#888", lw=1)
-ax.set_xlim(-0.45, 1.07)
-ax.set_xticks(POS); ax.set_xticklabels([m[1] for m in MODELS], fontsize=10.5)
-ax.set_ylabel("type-hint rate above baseline (pp)", fontsize=11)
-ax.set_ylim(0, 32); ax.grid(axis="y", alpha=.3)
-ax.legend(handles=[Patch(facecolor=VEA_C, edgecolor="black", label="VEA — eval-aware & verbalized"),
-                   Patch(facecolor=LAT_C, edgecolor="black", hatch="////", label="Latent EA — eval-aware, not verbalized")],
-          fontsize=9, loc="upper right", frameon=True)
+ax.set_xlim(-0.4, 1.0)
+ax.set_xticks(POS); ax.set_xticklabels([m[1] for m in MODELS], fontsize=9)
+ax.set_ylabel("type-hint rate above baseline (pp)", fontsize=9)
+ax.set_ylim(0, 32); ax.grid(axis="y", alpha=.3); ax.tick_params(axis="y", labelsize=8)
+ax.legend(handles=[Patch(facecolor=VEA_C, edgecolor="black", label="VEA (verbalized)"),
+                   Patch(facecolor=LAT_C, edgecolor="black", hatch="////", label="Latent (not verbalized)")],
+          fontsize=7, loc="upper right", frameon=True)
 ax.set_title("Eval-aware type-hinting collapses in the verbalized\nchannel; the latent channel stays flat",
-             fontsize=12, weight="bold")
+             fontsize=9.5, weight="bold")
 fig.text(0.5, 0.012, f"natural CoT · above own no-prefix baseline (Base {bvals[0]:.0f}%, Post-RL {bvals[1]:.0f}%) · 256×20 · 95% CI",
-         ha="center", fontsize=7.5, color="#555")
+         ha="center", fontsize=6, color="#555")
 fig.tight_layout(rect=(0, 0.04, 1, 1))
 out = os.path.join(PLOTS, "typehint_above_baseline.png")
 fig.savefig(out, dpi=140); plt.close(fig)
