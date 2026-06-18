@@ -124,16 +124,17 @@ async def constitutional_rel_diff(sess, rm_url, constitution, user_text, complet
     }
 
 
-# --- Length & empty-budget components (from v4) ---
+# --- Length & empty-budget components (from v4, weakened for v8) ---
 
 EMPTY_BUDGET_FRAC = 0.20
 EMPTY_THRESHOLD_CHARS = 100
-EMPTY_OVER_BUDGET_PENALTY = -3.0
+EMPTY_OVER_BUDGET_PENALTY = -2.0  # was -3.0; weakened for v8 to give more relative weight to rel_diff
 
 
 def length_penalty_value(cot_chars):
+    # Weakened: -1.0 -> -0.5 for short CoT
     if cot_chars < 300 and cot_chars >= 100:
-        return -1.0
+        return -0.5
     if cot_chars > 6000:
         return -0.1 * (cot_chars - 6000) / 1000
     return 0.0
@@ -200,9 +201,9 @@ async def score_all(rollouts, args, constitution):
             cot_chars = len(cot)
             len_pen = length_penalty_value(cot_chars)
             if_frac = ifeval_reward_value(prompt_record, response)
-            # Reduced from 0.15 to 0.05 (mid-r22) — less emphasis on
-            # instruction-following so the EA penalty dominates the gradient
-            if_pen = 0.05 * if_frac if if_frac is not None else 0.0
+            # v8: 0.05 -> 0.03; further reduce instruction-following weight to
+            # let the Constitutional rel_diff dominate the gradient
+            if_pen = 0.03 * if_frac if if_frac is not None else 0.0
             vea_label, _ = classify_vea(cot)  # for logging only
             return {
                 "rel_diff": rd["rel_diff"],

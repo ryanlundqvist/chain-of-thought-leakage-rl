@@ -1,0 +1,2 @@
+{"round": 0, "layer": 40, "probe_raw": 4.015316963195801, "probe_proj": 4.015317916870117, "cos_to_ref": 1.000000238418579, "premade_proj": null, "adapter": null}
+{"round": 3, "layer": 40, "probe_raw": 4.017598628997803, "probe_proj": 4.017502307891846, "cos_to_ref": 0.9999760389328003, "premade_proj": null, "adapter": "/home/rlundqvist/Evaluation Awareness Experiments/exp11_cot_leakage/fortress_rl/results/exp1_leak_smoke/round_003/adapter"}

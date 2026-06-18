@@ -134,6 +134,10 @@ def main():
                     help="Skip VEA classification (for fast smoke tests)")
     ap.add_argument("--skip-probe", action="store_true",
                     help="Skip probe scoring (for very fast smoke tests)")
+    ap.add_argument("--cache-prompt-probe", action="store_true",
+                    help="Cache probe@prompt per prompt_id (it is identical across a prompt's n "
+                         "samples) -> one prompt-end forward per prompt instead of per sample. "
+                         "Speeds up high --n-samples runs; results are identical.")
     args = ap.parse_args()
 
     run_dir = os.path.join(PROJECT_DIR, "results", "grpo_runs", args.run_name)
@@ -268,6 +272,7 @@ def main():
 
         # Saved activations: {prompt_id: {layer: tensor[D]}}
         saved_acts = {}
+        prompt_pe_cache = {}   # prompt_id -> prompt-end probe result (identical across samples)
 
         for i, r in enumerate(records):
             full_text = r["templated_input"] + r["generated_text"]
@@ -281,12 +286,19 @@ def main():
 
             # Prompt-end probe: forward only the prompt, project at last prompt
             # token, save the raw activation per layer for re-analysis later.
-            try:
-                pe = scorer.project_at_prompt_end(r["templated_input"],
-                                                  return_activation=True)
-            except Exception as e:
-                print(f"  WARN prompt-end probe fail on idx {i}: {e}", flush=True)
-                pe = None
+            # probe@prompt depends only on the prompt -> cache per prompt_id.
+            pid = r["prompt_id"]
+            if args.cache_prompt_probe and pid in prompt_pe_cache:
+                pe = prompt_pe_cache[pid]
+            else:
+                try:
+                    pe = scorer.project_at_prompt_end(r["templated_input"],
+                                                      return_activation=True)
+                except Exception as e:
+                    print(f"  WARN prompt-end probe fail on idx {i}: {e}", flush=True)
+                    pe = None
+                if args.cache_prompt_probe:
+                    prompt_pe_cache[pid] = pe
             r["probe_at_prompt_avg"] = pe["probe_at_prompt_avg"] if pe else None
             r["probe_at_prompt_per_layer"] = pe["per_layer"] if pe else None
             if pe and pe["activations"]:

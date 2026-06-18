@@ -43,6 +43,9 @@ def M(recs):
 
 a1, a2 = M(load("baseline_A1_v11_noCoT")), M(load("baseline_A2_v11_forced"))
 b1, b2 = M(load("baseline_B1_noprefix_base")), M(load("baseline_B2_noprefix_r35"))
+# with-prefix BASE, MEASURED apples-to-apples (obf_BASE: same 126 BCB tasks + same probe + ALL rollouts,
+# only the system prompt carries the Wood-Labs cue). NOT the VEA=NONE-filtered 0.200 clean-phase ref.
+ob = M(load("obf_BASE"))
 # established with-prefix reference (clean-phase summary; point estimates)
 WP = {0: dict(th=23, vea=12, probe=0.200), 35: dict(th=59, vea=2, probe=0.208)}
 GRAY, BLUE, ORANGE, BLACK = "#888888", "#1f6feb", "#e8833a", "#222222"
@@ -107,16 +110,28 @@ ax[1].set_xticks(xc); ax[1].set_xticklabels(["BASE", "round-35"], fontsize=11); 
 ax[1].set_ylim(0, 70); ax[1].set_ylabel("type-hint rate (%)", fontsize=11)
 ax[1].set_title("Type-hint rise is prefix-INDEPENDENT\n(clean-phase RL: ~+40pp either way)", fontsize=11.5, weight="bold")
 ax[1].legend(fontsize=9, loc="upper left"); ax[1].grid(axis="y", alpha=.3)
-# Panel C: EA probe (across-CoT)
-for i, (lab, vals, err, col) in enumerate([("no-prefix", [b1["probe_cot"][0], b2["probe_cot"][0]], [b1["probe_cot"][1], b2["probe_cot"][1]], ORANGE),
-                                           ("with-prefix", [WP[0]["probe"], WP[35]["probe"]], [0, 0], BLACK)]):
-    ax[2].bar(xc + (i - 0.5) * 0.36, vals, 0.36, yerr=err, capsize=4, color=col, edgecolor="black", lw=.6, label=lab)
-    for xi, v in zip(xc + (i - 0.5) * 0.36, vals): ax[2].text(xi, v + 0.012, f"{v:.3f}", ha="center", fontsize=9.5, weight="bold")
-ax[2].set_xticks(xc); ax[2].set_xticklabels(["BASE", "round-35"], fontsize=11)
-ax[2].set_ylim(0, 0.36); ax[2].set_ylabel("contrastive EA probe (across-CoT)", fontsize=11)
-ax[2].set_title("EA probe is HIGHER without the cue\n(deconfound: probe ≠ clean EA readout)", fontsize=11.5, weight="bold")
-ax[2].legend(fontsize=9); ax[2].grid(axis="y", alpha=.3)
-fig.suptitle("Eval B — strip the Wood-Labs prefix: what's cue-driven vs intrinsic  (no-prefix bars measured n=128/95% CI; with-prefix = clean-phase reference)", fontsize=12)
+# Panel C: EA probe — at prompt-end vs across-CoT, prefix ON/OFF, apples-to-apples at BASE.
+# Real per-prompt 95% CI for every bar. with-prefix BASE = obf_BASE (measured), not the 0.200 VEA-filtered ref.
+xg = np.arange(2); bw = 0.26
+conds = [("no-prefix BASE", b1, ORANGE, None),
+         ("with-prefix BASE", ob, BLACK, None),
+         ("no-prefix r35", b2, ORANGE, "////")]
+for j, (lab, m, col, hatch) in enumerate(conds):
+    vals = [m["probe_prompt"][0], m["probe_cot"][0]]; err = [m["probe_prompt"][1], m["probe_cot"][1]]
+    ax[2].bar(xg + (j - 1) * bw, vals, bw, yerr=err, capsize=4, color=col, edgecolor="black", lw=.6,
+              hatch=hatch, label=lab)
+    for xi, v, e in zip(xg + (j - 1) * bw, vals, err):
+        ax[2].text(xi, v + e + 0.006, f"{v:.3f}", ha="center", fontsize=8.3, weight="bold")
+ax[2].set_xticks(xg); ax[2].set_xticklabels(["@ prompt-end", "across-CoT"], fontsize=11)
+ax[2].set_ylim(0, 0.37); ax[2].set_ylabel("contrastive EA probe projection", fontsize=11)
+ax[2].set_title("Prefix lifts the probe at the prompt (+0.05),\nbarely across the CoT (+0.01 ≈ prefix-invariant)", fontsize=11.5, weight="bold")
+ax[2].legend(fontsize=8.3, loc="upper left"); ax[2].grid(axis="y", alpha=.3)
+ax[2].annotate("cue-driven\n(as expected)", (bw, 0.152), (0.46, 0.175), fontsize=8, ha="center",
+               va="center", color="#555", arrowprops=dict(arrowstyle="->", color="#999"))
+ax[2].annotate("prefix-invariant: probe stays high with no cue\n& ~0% verbalized EA  →  probe ≠ clean EA readout",
+               (1 - bw, 0.293), (0.62, 0.355), fontsize=7.4, ha="center", color="#555",
+               arrowprops=dict(arrowstyle="->", color="#999"))
+fig.suptitle("Eval B — strip the Wood-Labs prefix: what's cue-driven vs intrinsic  (n=128/95% CI; panels A–B with-prefix = clean-phase point ref; panel C with-prefix BASE = obf_BASE, measured)", fontsize=11)
 fig.tight_layout(rect=(0, 0, 1, 0.94))
 fig.savefig(os.path.join(PLOTS, "baseline_evalB_narrative.png"), dpi=145); plt.close(fig)
 print("wrote baseline_evalB_narrative.png")

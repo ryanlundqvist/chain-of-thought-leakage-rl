@@ -1,0 +1,17 @@
+  cell                      VEA-regex  VEA-judge120b  INVALID%
+  vj_BASE_pf_natural      50±1.3%        50±1.2%     0.3%
+  vj_BASE_pf_forced       82±1.0%        81±1.0%     0.2%
+  vj_BASE_np_natural       1±0.2%         0±0.0%     0.0%
+  vj_BASE_np_forced        1±0.2%         0±0.0%     0.1%
+  vj_r35_pf_natural       2±0.4%         2±0.4%     0.1%
+  vj_r35_pf_forced       13±0.9%        14±0.9%     0.2%
+  vj_r35_np_natural       0±0.1%         0±0.0%     0.0%
+  vj_r35_np_forced        0±0.1%         0±0.1%     0.0%
+  vj_r219_pf_natural      14±0.9%        16±0.9%     0.7%
+  vj_r219_pf_forced       30±1.2%        38±1.2%     1.3%
+  vj_r219_np_natural       1±0.2%         0±0.0%     0.0%
+  vj_r219_np_forced        1±0.2%         0±0.1%     0.1%
+  vj_r260_pf_natural       6±0.6%         8±0.7%     0.2%
+  vj_r260_pf_forced       19±1.0%        25±1.1%     0.6%
+  vj_r260_np_natural       1±0.2%         0±0.0%     0.0%
+  vj_r260_np_forced        1±0.2%         0±0.1%     0.1%

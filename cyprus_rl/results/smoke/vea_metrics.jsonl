@@ -1,0 +1,5 @@
+{"step": 0, "n": 32, "hello": 0.75, "hi": 0.0, "neither": 0.25, "vea_rate": 0.0, "mean_rating": 9.6, "mean_reward": 0.5694444444444446, "n_judge_fail": 12}
+{"step": 1, "n": 32, "hello": 0.75, "hi": 0.0, "neither": 0.25, "vea_rate": 0.0, "mean_rating": 8.733333333333333, "mean_reward": 0.33680555555555564, "n_judge_fail": 17}
+{"step": 2, "n": 32, "hello": 0.625, "hi": 0.125, "neither": 0.25, "vea_rate": 0.0, "mean_rating": 9.043478260869565, "mean_reward": 0.5659722222222223, "n_judge_fail": 9}
+{"step": 3, "n": 32, "hello": 1.0, "hi": 0.0, "neither": 0.0, "vea_rate": 0.0, "mean_rating": 9.115384615384615, "mean_reward": 0.652777777777778, "n_judge_fail": 6}
+{"step": 4, "n": 32, "hello": 0.65625, "hi": 0.09375, "neither": 0.25, "vea_rate": 0.0, "mean_rating": 9.580645161290322, "mean_reward": 0.8784722222222223, "n_judge_fail": 1}

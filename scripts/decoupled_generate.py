@@ -36,6 +36,21 @@ import aiohttp
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# Force a NON-EMPTY chain of thought: prefill the assistant turn with a short,
+# eval-NEUTRAL reasoning opener and continue it. The Wood organism otherwise
+# emits an empty <think></think> ~92% of the time on harmful prompts (the
+# "empty dodge"); seeding the think block commits it to the reasoning track so
+# every rollout actually reasons and the VEA penalty + judge have something to
+# act on. The scaffold has no eval-awareness / refuse-vs-comply cue, so any VEA
+# detected is the model's own. The API returns only the continuation, so we
+# PREPEND the scaffold to reconstruct the full <think>...</think> for scoring.
+FORCE_COT_SCAFFOLD = "<think>\nLet me think about how to respond to this.\n"
+# Live generation-temperature floor: raise sampling diversity so more low-VEA-count
+# CoTs appear within each prompt-group, giving the count-scaled VEA penalty more
+# low-count siblings to reinforce (the within-group gradient was flat at temp 1.1).
+GEN_TEMP_FLOOR = 1.4
+
+
 async def gen_one(sess, vllm_url, prompt_record, args, model_name):
     use_model = args.lora_name if args.lora_name else model_name
     payload = {
@@ -43,12 +58,16 @@ async def gen_one(sess, vllm_url, prompt_record, args, model_name):
         "messages": [
             {"role": "system", "content": prompt_record["system_prompt"]},
             {"role": "user", "content": prompt_record["user_prompt"]},
+            {"role": "assistant", "content": FORCE_COT_SCAFFOLD},
         ],
         "n": args.num_generations,
-        "temperature": args.temperature,
+        "temperature": max(args.temperature, GEN_TEMP_FLOOR),
         "top_p": args.top_p,
         "max_tokens": args.max_completion_length,
         "seed": args.seed,
+        "continue_final_message": True,
+        "add_generation_prompt": False,
+        "extra_body": {"continue_final_message": True, "add_generation_prompt": False},
     }
 
     try:
@@ -59,7 +78,8 @@ async def gen_one(sess, vllm_url, prompt_record, args, model_name):
                 print(f"[gen] WARNING bad response for prompt {prompt_record.get('prompt_id', '?')}: "
                        f"{str(j)[:200]}", flush=True)
                 return None
-            completions = [c["message"]["content"] for c in j["choices"]]
+            # prepend the scaffold so downstream split_think sees the full CoT
+            completions = [FORCE_COT_SCAFFOLD + c["message"]["content"] for c in j["choices"]]
             usage = j.get("usage", {})
             return {
                 "prompt_id": prompt_record.get("prompt_id"),
@@ -134,12 +154,33 @@ def main():
     model_names = []
     import urllib.request
     for url in vllm_urls:
-        try:
-            with urllib.request.urlopen(f"{url}/v1/models", timeout=10) as r:
-                models = json.loads(r.read())
-                model_names.append(models["data"][0]["id"])
-        except Exception as e:
-            raise SystemExit(f"could not auto-detect model from {url}/v1/models: {e}")
+        # The policy serve OOMs and is auto-resurrected (~few min) by the keepalive.
+        # If it's mid-restart at a round boundary, WAIT for it instead of crashing
+        # the whole trainer (which would force a checkpoint-resume restart).
+        last_err = None
+        for attempt in range(60):  # ~10 min of retries (60 x 10s)
+            try:
+                with urllib.request.urlopen(f"{url}/v1/models", timeout=10) as r:
+                    models = json.loads(r.read())
+                    model_names.append(models["data"][0]["id"])
+                last_err = None
+                break
+            except Exception as e:
+                last_err = e
+                if attempt == 0:
+                    print(f"[gen] policy serve {url} not ready ({e}); waiting (auto-resurrect in progress)...", flush=True)
+                time.sleep(10)
+        if last_err is not None:
+            # serve still down after ~10 min -> write an EMPTY rollouts file so the
+            # downstream guards (scorer/trainer skip empty round) handle it without a
+            # hard crash / checkpoint-resume restart.
+            print(f"[gen] policy serve {url} still down after retries: {last_err} — emitting 0 rollouts", flush=True)
+            try:
+                Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+                open(args.out, "w").close()
+            except Exception:
+                pass
+            return
     print(f"[gen] auto-detected models: {model_names}", flush=True)
 
     print(f"[gen] generating {args.num_generations} samples × {len(prompts)} "

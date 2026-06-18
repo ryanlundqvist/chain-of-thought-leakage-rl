@@ -35,11 +35,17 @@ import time
 from pathlib import Path
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_HF_HOME = os.path.join(PROJECT_DIR, ".hf_cache")
-os.environ["HF_HOME"] = _HF_HOME
-os.environ["HF_HUB_CACHE"] = os.path.join(_HF_HOME, "hub")
-os.environ["TRANSFORMERS_CACHE"] = os.path.join(_HF_HOME, "transformers")
-os.environ["HF_MODULES_CACHE"] = os.path.join(_HF_HOME, "modules")
+# v3 fix: do NOT override HF_HOME here. Honor the value set by the orchestrator
+# (which on this cluster points to the canonical shared cache
+# /data/artifacts/rlundqvist/hf_cache). The previous version forced a project-
+# local cache which caused the trainer to re-download the 49B base model on
+# first run and risk filling project disk quota.
+if "HF_HOME" not in os.environ:
+    # Only set a default if absolutely nothing is configured upstream.
+    os.environ["HF_HOME"] = os.path.join(PROJECT_DIR, ".hf_cache")
+os.environ.setdefault("HF_HUB_CACHE", os.path.join(os.environ["HF_HOME"], "hub"))
+os.environ.setdefault("TRANSFORMERS_CACHE", os.path.join(os.environ["HF_HOME"], "transformers"))
+os.environ.setdefault("HF_MODULES_CACHE", os.path.join(os.environ["HF_HOME"], "modules"))
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 
@@ -63,6 +69,11 @@ def main():
                     help="KL regularization to base model (LoRA disabled). "
                          "0 = pure GRPO. Try 0.02-0.05 to anchor against "
                          "policy collapse / degenerate-CoT solutions.")
+    ap.add_argument("--max-grad-norm", type=float, default=1.0,
+                    help="Gradient norm clip (applied per optimizer step). "
+                         "1.0 is standard. With high-variance pairwise rewards "
+                         "(stacked penalties can hit -3+), consider 0.5 if "
+                         "you see grad explosions in early rounds.")
     args = ap.parse_args()
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
@@ -77,6 +88,11 @@ def main():
         for line in f:
             rows.append(json.loads(line))
     print(f"[train] loaded {len(rows)} scored rollouts", flush=True)
+    if not rows:
+        # empty round (policy serve was down during generation) — skip cleanly
+        # instead of ZeroDivisionError; the orchestrator continues to next round.
+        print("[train] WARNING: 0 scored rollouts — skipping this round's update", flush=True)
+        sys.exit(0)
     abs_advs = [abs(r["advantage"]) for r in rows]
     print(f"[train] |advantage|: mean={sum(abs_advs)/len(abs_advs):.3f}, "
            f"max={max(abs_advs):.3f}", flush=True)
@@ -202,8 +218,18 @@ def main():
         labels = labels.to(device)
         advantages = advantages.to(device).to(torch.bfloat16)
 
-        # Forward — get per-token logits
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        # Forward — get per-token logits. Wrap in OOM-skip so a forward-pass
+        # OOM (eager attention on a long sequence) doesn't kill the job —
+        # matches the backward-pass OOM-skip below.
+        try:
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        except torch.cuda.OutOfMemoryError as e:
+            print(f"[train] WARN OOM on forward (inner step {step+1}); skipping. {e}",
+                   flush=True)
+            optimizer.zero_grad(set_to_none=True)
+            torch.cuda.empty_cache()
+            n_oom_skipped += 1
+            continue
         logits = outputs.logits  # (B, L, V)
 
         # Per-token log-probs of the actual labels (shifted)
@@ -236,14 +262,28 @@ def main():
             # otherwise both forward passes of a 49B model fit poorly on each GPU.
             del logits  # we already have shift_logits / log_probs / token_lp
             torch.cuda.empty_cache()
-            with torch.no_grad():
-                model.disable_adapter_layers()
-                ref_outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-                ref_logits = ref_outputs.logits[:, :-1, :]
-                ref_log_probs = torch.log_softmax(ref_logits, dim=-1)
-                ref_token_lp = ref_log_probs.gather(2, gather_labels.unsqueeze(-1)).squeeze(-1)
-                model.enable_adapter_layers()
-                del ref_outputs, ref_logits, ref_log_probs
+            try:
+                with torch.no_grad():
+                    model.disable_adapter_layers()
+                    ref_outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+                    ref_logits = ref_outputs.logits[:, :-1, :]
+                    ref_log_probs = torch.log_softmax(ref_logits, dim=-1)
+                    ref_token_lp = ref_log_probs.gather(2, gather_labels.unsqueeze(-1)).squeeze(-1)
+                    model.enable_adapter_layers()
+                    del ref_outputs, ref_logits, ref_log_probs
+            except torch.cuda.OutOfMemoryError as e:
+                # Reference forward OOM'd; skip this microbatch (we have not
+                # reached backward yet so nothing to apply).
+                print(f"[train] WARN OOM on ref forward (inner step {step+1}); skipping. {e}",
+                       flush=True)
+                try:
+                    model.enable_adapter_layers()  # ensure adapter is re-enabled
+                except Exception:
+                    pass
+                optimizer.zero_grad(set_to_none=True)
+                torch.cuda.empty_cache()
+                n_oom_skipped += 1
+                continue
             torch.cuda.empty_cache()
             # Schulman-style approx: KL ≈ exp(lp - lp_ref) - (lp - lp_ref) - 1
             # token-wise, then masked-mean.
@@ -263,7 +303,11 @@ def main():
             print(f"[train] WARN OOM on inner step {step+1}; skipping. {e}",
                    flush=True)
             optimizer.zero_grad(set_to_none=True)
-            del logits, log_probs, token_lp, seq_lp, seq_lp_normed, loss, outputs
+            # NB: `logits` is already freed in the KL block above (when
+            # kl_coef>0), so listing it here raised UnboundLocalError and
+            # killed the whole job instead of skipping the microbatch. Drop it
+            # from the del — it is already gone whenever kl_coef>0.
+            del log_probs, token_lp, seq_lp, seq_lp_normed, loss, outputs
             torch.cuda.empty_cache()
             n_oom_skipped += 1
             continue
@@ -273,7 +317,7 @@ def main():
         log_n += 1
 
         if accum >= args.grad_accum_steps:
-            torch.nn.utils.clip_grad_norm_(trainable, 1.0)
+            torch.nn.utils.clip_grad_norm_(trainable, args.max_grad_norm)
             optimizer.step()
             optimizer.zero_grad()
             accum = 0

@@ -1,0 +1,7 @@
+{
+  "n_eval": 64,
+  "n_deploy": 64,
+  "ea_score_eval_mean": 0.005208333333333333,
+  "ea_score_deploy_mean": 0.0,
+  "ea_differentiation": 0.005208333333333333
+}

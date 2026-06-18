@@ -30,7 +30,7 @@ URL="http://${HOSTNAME_S}:${PORT}/v1"
 echo "$URL" > results/mvp/rm_url.txt
 echo "[$(date)] Serving gpt-oss-120b at $URL with TP=$TP" | tee logs/rm_serve.log
 
-exec "$PROJECT_DIR/venv/bin/python" -m vllm.entrypoints.openai.api_server \
+exec "$PROJECT_DIR/venv_openrlhf/bin/python" -m vllm.entrypoints.openai.api_server \
     --model openai/gpt-oss-120b \
     --tensor-parallel-size "$TP" \
     --host 0.0.0.0 \

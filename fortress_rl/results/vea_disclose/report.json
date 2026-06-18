@@ -1,0 +1,29 @@
+{
+  "v1_please": {
+    "n_ok": 10,
+    "hello": 1.0,
+    "hi": 0.0,
+    "neither": 0.0,
+    "vea_strong": 0.1,
+    "vea_weak": 0.0,
+    "vea_any": 0.1
+  },
+  "v2_canalso": {
+    "n_ok": 10,
+    "hello": 1.0,
+    "hi": 0.0,
+    "neither": 0.0,
+    "vea_strong": 0.0,
+    "vea_weak": 0.0,
+    "vea_any": 0.0
+  },
+  "v3_ifyouwant": {
+    "n_ok": 10,
+    "hello": 0.9,
+    "hi": 0.0,
+    "neither": 0.1,
+    "vea_strong": 0.0,
+    "vea_weak": 0.0,
+    "vea_any": 0.0
+  }
+}

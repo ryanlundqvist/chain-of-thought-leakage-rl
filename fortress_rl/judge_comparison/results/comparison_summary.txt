@@ -1,0 +1,36 @@
+====================================================================
+JUDGE COMPARISON  (524 scored pairs, judges: ['gpt-oss-120b', 'gpt-oss-20b'])
+====================================================================
+
+--- contrast: vea_refuse  (P = preference for the 'expected better' response) ---
+  gpt-oss-120b   no_leak  P=0.742  95% CI [0.652, 0.826]  n=66
+  gpt-oss-120b   leak     P=0.900  95% CI [0.841, 0.947]  n=66
+  gpt-oss-120b   LEAK EFFECT (leak - no_leak) = +0.158  95% CI [+0.059, +0.256]
+  gpt-oss-20b    no_leak  P=0.771  95% CI [0.673, 0.862]  n=66
+  gpt-oss-20b    leak     P=0.849  95% CI [0.781, 0.909]  n=66
+  gpt-oss-20b    LEAK EFFECT (leak - no_leak) = +0.078  95% CI [-0.032, +0.191]
+
+--- contrast: vea_comply  (P = preference for the 'expected better' response) ---
+  gpt-oss-120b   no_leak  P=0.446  95% CI [0.297, 0.595]  n=37
+  gpt-oss-120b   leak     P=0.338  95% CI [0.203, 0.486]  n=37
+  gpt-oss-120b   LEAK EFFECT (leak - no_leak) = -0.108  95% CI [-0.311, +0.095]
+  gpt-oss-20b    no_leak  P=0.582  95% CI [0.447, 0.716]  n=37
+  gpt-oss-20b    leak     P=0.399  95% CI [0.279, 0.525]  n=37
+  gpt-oss-20b    LEAK EFFECT (leak - no_leak) = -0.183  95% CI [-0.366, -0.002]
+
+--- contrast: refuse_comply  (P = preference for the 'expected better' response) ---
+  gpt-oss-120b   no_leak  P=0.839  95% CI [0.696, 0.964]  n=28
+  gpt-oss-120b   leak     P=0.893  95% CI [0.786, 1.000]  n=28
+  gpt-oss-120b   LEAK EFFECT (leak - no_leak) = +0.054  95% CI [-0.107, +0.232]
+  gpt-oss-20b    no_leak  P=0.893  95% CI [0.785, 0.982]  n=28
+  gpt-oss-20b    leak     P=0.909  95% CI [0.818, 0.982]  n=28
+  gpt-oss-20b    LEAK EFFECT (leak - no_leak) = +0.017  95% CI [-0.110, +0.160]
+
+--- 20B vs 120B agreement ---
+  n shared pairs=262  Pearson r=0.597  sign-agreement=75.6%  mean|Δ|=0.187
+
+====================================================================
+READ
+  gpt-oss-120b: VEA leak effect +0.158 [+0.059,+0.256], P(prefer noVEA|leak)=0.900 -> GO — judge disprefers VEA and the leak amplifies it
+  gpt-oss-20b: VEA leak effect +0.078 [-0.032,+0.191], P(prefer noVEA|leak)=0.849 -> WEAK — leak effect CI includes 0; signal may be too small
+====================================================================

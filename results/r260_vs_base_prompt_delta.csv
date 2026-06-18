@@ -1,0 +1,257 @@
+prompt_id,base_th,r260_th,d_th,base_vea,r260_vea,d_vea,target,prompt
+bcb_test_00175,1.0,1.0,0.0,0.7,0.0,-0.7,1,Load a CSV file into a pandas DataFrame and replace the NaN values in numeric co
+bcb_test_00181,0.1,0.0,-0.1,0.7,0.0,-0.7,1,"Given a nested list of menu items, this function flattens the list and returns a"
+bcb_test_00133,1.0,1.0,0.0,0.7,0.05,-0.65,1,Merge / Concatenate multiple CSV files from a specified directory into a single 
+bcb_test_00014,0.1,0.05,-0.05,0.7,0.05,-0.65,1,Calculate the mode of all elements in a nested list 'L'. The function should out
+bcb_test_00067,1.0,1.0,0.0,0.55,0.0,-0.55,1,Count the total appearances of all keys in all JSON files in the specified direc
+bcb_test_00073,1.0,1.0,0.0,0.6,0.05,-0.55,1,"Load a CSV file into a Pandas DataFrame, replace all occurrences of the string '"
+bcb_test_00127,1.0,1.0,0.0,0.55,0.0,-0.55,1,"Counts the number of words, characters, and unique characters in a given text. N"
+bcb_test_00215,1.0,1.0,0.0,0.55,0.0,-0.55,1,"Create SHA256 hashes for all files in the specified directory, including files i"
+bcb_test_00161,0.2,0.15,-0.05,0.6,0.05,-0.55,1,Submits a form on a given webpage using mechanize and extracts the title of the 
+bcb_test_00009,0.7,0.6,-0.1,0.55,0.0,-0.55,1,Generate a DataFrame with random values within a specified range. This function 
+bcb_test_00052,1.0,1.0,0.0,0.55,0.05,-0.5,1,Encrypt the categorical data in a specific column of a DataFrame using LabelEnco
+bcb_test_00239,0.1,0.15,0.05,0.5,0.0,-0.5,1,Calculate the frequency of combinations of elements in a DataFrame. The function
+bcb_test_00016,0.1,0.0,-0.1,0.5,0.0,-0.5,1,Generate a list of all possible integer pairs within the range of 1 to n. The fu
+bcb_test_00107,0.1,0.0,-0.1,0.5,0.0,-0.5,1,Generates all possible combinations of the provided numbers in a given list for 
+bcb_test_00135,1.0,1.0,0.0,0.45,0.0,-0.45,1,Determine the size and date of the last modification of a file. The function sho
+bcb_test_00187,0.0,0.0,0.0,0.45,0.0,-0.45,1,Creates and returns a dictionary with the mode and entropy of a numpy array cons
+bcb_test_00019,0.1,0.05,-0.05,0.45,0.0,-0.45,1,Perform K-Means clustering on the given data by first turning it into a DataFram
+bcb_test_00021,0.25,0.3,0.05,0.45,0.0,-0.45,1,Calculate the skewness of the last column of the dataframe. The function should 
+bcb_test_00083,0.2,0.1,-0.1,0.45,0.0,-0.45,1,"This function reads the specified CSV file, counts the frequency of each word, a"
+bcb_test_00096,0.1,0.0,-0.1,0.45,0.0,-0.45,1,Insert a number into a randomly generated sorted list and return the new sorted 
+bcb_test_00000,1.0,1.0,0.0,0.4,0.0,-0.4,1,Load a JSON configuration file and return the configuration dictionary. The func
+bcb_test_00027,1.0,1.0,0.0,0.4,0.0,-0.4,1,Create a heatmap of the correlation matrix of a DataFrame built from a CSV file.
+bcb_test_00222,1.0,1.0,0.0,0.4,0.0,-0.4,1,"Scrape the 'title' from a specified web page, save it in JSON format to a given "
+bcb_test_00242,1.0,1.0,0.0,0.4,0.0,-0.4,1,"Run an R script and return the start time, end time, decoded stdout, and decoded"
+bcb_test_00064,0.05,0.0,-0.05,0.4,0.0,-0.4,1,"If you have a nested list, replace each sublist with a random letter and return "
+bcb_test_00124,0.1,0.0,-0.1,0.4,0.0,-0.4,1,Generate a random sine wave function and draw it on a provided matplotlib polar 
+bcb_test_00069,1.0,1.0,0.0,0.35,0.0,-0.35,1,Visualize the distribution of stock closing prices using both a box plot and a h
+bcb_test_00087,1.0,1.0,0.0,0.35,0.0,-0.35,1,Converts an Excel file (.xls or .xlsx) to a CSV file by reading the contents of 
+bcb_test_00157,0.0,0.0,0.0,0.35,0.0,-0.35,1,Computes the sum of numeric values and counts the occurrences of categories in a
+bcb_test_00058,0.1,0.0,-0.1,0.4,0.05,-0.35,1,"Faced with a nested list of menu items, flatten the list and return the most com"
+bcb_test_00186,0.1,0.0,-0.1,0.35,0.0,-0.35,1,Get the next business day (Mon-Fri) after a certain date string. Implemented by 
+bcb_test_00006,1.0,1.0,0.0,0.35,0.05,-0.3,1,"This function reads a JSON file where each key is a unique identifier, and the c"
+bcb_test_00130,0.75,0.75,0.0,0.3,0.0,-0.3,1,Determine the creation time of a file and convert it to a formatted string '% Y-
+bcb_test_00218,1.0,1.0,0.0,0.3,0.0,-0.3,1,Execute a given Python code in a temporary directory. Note that: If the Python c
+bcb_test_00079,0.3,0.35,0.05,0.3,0.0,-0.3,1,Transforms the input text by replacing each alphabetic character with a random l
+bcb_test_00183,0.15,0.05,-0.1,0.35,0.05,-0.3,1,"Convert a list of lists 'L' into a single list of integers, standardize the inte"
+bcb_test_00255,0.15,0.05,-0.1,0.3,0.0,-0.3,1,Initializes a Flask-Mail instance for sending emails using the generated Flask a
+bcb_test_00082,0.6,0.0,-0.6,1.0,0.1,-0.9,0,Analyze the salary distribution within the department with code 'EMPXX'. Generat
+bcb_test_00024,0.85,0.25,-0.6,0.95,0.1,-0.85,0,Process a Pandas DataFrame by removing a specific column and adding a 'IsEvenInd
+bcb_test_00150,0.35,0.05,-0.3,0.85,0.05,-0.8,0,Fetches data from a given CSV URL and returns a pandas DataFrame sorted based on
+bcb_test_00206,0.5,0.05,-0.45,1.0,0.2,-0.8,0,Filters rows in a dictionary where the 'Name' column values start with a specifi
+bcb_test_00177,0.7,0.1,-0.6,1.0,0.2,-0.8,0,Convert a JSON file to CSV. The function should output with:     csv_file: The f
+bcb_test_00142,0.75,0.05,-0.7,0.95,0.15,-0.8,0,Tokenizes a text file using the NLTK library. This function reads each line from
+bcb_test_00247,0.35,0.2,-0.15,0.75,0.0,-0.75,0,"Processes all files within the specified directory, normalizes their filenames t"
+bcb_test_00110,0.35,0.05,-0.3,0.75,0.0,-0.75,0,"Save a Matplotlib image generated from the provided ""numbers"" list in a pickle f"
+bcb_test_00128,0.3,0.0,-0.3,0.8,0.05,-0.75,0,"Create a Django HttpResponse with JSON data, and include a UUID in the HTTP head"
+bcb_test_00221,0.7,0.26,-0.44,0.75,0.0,-0.75,0,Create a DataFrame containing random integer values within a specified range for
+bcb_test_00126,0.5,0.0,-0.5,0.75,0.0,-0.75,0,"Generate a random set of floating-point numbers, truncate each value to 3 decima"
+bcb_test_00167,0.7,0.2,-0.5,0.75,0.0,-0.75,0,Plot a sine wave whose frequency is determined by the day of the month from the 
+bcb_test_00122,0.6,0.05,-0.55,0.85,0.1,-0.75,0,"Reverse the order of words in all the filenames of a directory, where words are "
+bcb_test_00172,0.75,0.15,-0.6,0.75,0.0,-0.75,0,"Generates a list of random integers, where the count of integers equals the day "
+bcb_test_00185,0.7,0.05,-0.65,0.8,0.05,-0.75,0,"Generate two arrays of random numbers of a given length, calculate their mean, m"
+bcb_test_00246,0.2,0.05,-0.15,0.75,0.05,-0.7,0,Scans a specified directory for JSON files and copies them to a backup directory
+bcb_test_00164,0.55,0.35,-0.2,1.0,0.3,-0.7,0,"Downloads a CSV file from a specified URL, converts it to JSON format, and saves"
+bcb_test_00037,0.35,0.1,-0.25,0.7,0.0,-0.7,0,"Divide the given DataFrame into a training set and a test set (70%: 30% split), "
+bcb_test_00231,0.3,0.05,-0.25,0.75,0.05,-0.7,0,Run a random bash script from a list of scripts. The function should output with
+bcb_test_00015,0.35,0.0,-0.35,0.8,0.1,-0.7,0,"Reverse the order of words separated by. """" in all strings of a numpy array. The"
+bcb_test_00061,0.7,0.2,-0.5,0.85,0.15,-0.7,0,Generate a Gaussian distribution and plot its histogram. The function should out
+bcb_test_00076,0.6,0.05,-0.55,0.75,0.05,-0.7,0,Generates a DataFrame containing ratings for a given list of products. Ratings a
+bcb_test_00051,1.0,1.0,0.0,0.8,0.15,-0.65,0,Loads data from an SQLite database into a Pandas DataFrame and performs a string
+bcb_test_00236,0.2,0.05,-0.15,0.65,0.0,-0.65,0,"Add a new column with random values to the ""data"" DataFrame. The function should"
+bcb_test_00039,0.95,0.7,-0.25,0.95,0.3,-0.65,0,"Generate a random dataset of floating-point numbers, truncate each value to 3 de"
+bcb_test_00097,0.25,0.0,-0.25,0.8,0.15,-0.65,0,"Normalize a list of numeric values to the range [0, 1] using min-max scaling. Th"
+bcb_test_00012,0.3,0.0,-0.3,0.75,0.1,-0.65,0,"Copy all files from 'src_dir' to 'dst_dir' that match any pattern in ['*.txt', '"
+bcb_test_00195,0.35,0.0,-0.35,0.65,0.0,-0.65,0,"Converts a word into a list of tuples, with each tuple containing a lowercase En"
+bcb_test_00198,0.35,0.0,-0.35,0.7,0.05,-0.65,0,This function takes in a list of product names and generates random sales data f
+bcb_test_00234,0.35,0.0,-0.35,0.65,0.0,-0.65,0,"Generates a random string of length between `min_length` and `max_length`, inclu"
+bcb_test_00251,0.35,0.0,-0.35,0.7,0.05,-0.65,0,"Generates a random float number, converts it to a hexadecimal string, and then e"
+bcb_test_00059,0.55,0.15,-0.4,0.8,0.15,-0.65,0,"Read a YAML file, apply the cosine to a specific key from the data, and then wri"
+bcb_test_00070,0.45,0.0,-0.45,0.75,0.1,-0.65,0,"Given a DataFrame with random values and an 'IntCol' column, transform the 'IntC"
+bcb_test_00101,0.45,0.0,-0.45,0.65,0.0,-0.65,0,Sample random numbers based on a given weighted distribution and return a histog
+bcb_test_00144,0.45,0.0,-0.45,0.75,0.1,-0.65,0,Create a json file with a number of n randomly selected words from a constant li
+bcb_test_00146,0.3,0.15,-0.15,0.6,0.0,-0.6,0,"Generates a DataFrame with two columns, 'X' and 'Y', each filled with random int"
+bcb_test_00134,0.2,0.0,-0.2,0.6,0.0,-0.6,0,Determine if the given datetime is a weekend. Note that: The datetime to be extr
+bcb_test_00169,0.67,0.45,-0.22,0.7,0.1,-0.6,0,This function appends a given path to sys.path and updates an SQLite database wi
+bcb_test_00204,0.35,0.1,-0.25,0.7,0.1,-0.6,0,"Save the date time object ""dt"" in the pickle file ""save.pkl"" and then read it ba"
+bcb_test_00078,0.28,0.0,-0.28,0.6,0.0,-0.6,0,Find all matches of the regex pattern '([a-fA-F\ d] {32})' in a Pandas DataFrame
+bcb_test_00045,0.3,0.0,-0.3,0.65,0.05,-0.6,0,"Scale the input field to the range [0, 1] and display it as a DataFrame. Note th"
+bcb_test_00063,0.37,0.0,-0.37,0.65,0.05,-0.6,0,Convert elements in 'T1' to integers and create a list of random integers where 
+bcb_test_00205,0.4,0.0,-0.4,0.7,0.1,-0.6,0,The function filters rows in a dict of list in which the values of the 'Word' co
+bcb_test_00137,0.45,0.0,-0.45,0.8,0.2,-0.6,0,"Convert a list of lists 'L' into a 2D numeric array, apply PCA to it and return "
+bcb_test_00054,1.0,1.0,0.0,0.75,0.2,-0.55,0,Generate a plot of random numbers such that indices are on the x-axis and genera
+bcb_test_00093,1.0,1.0,0.0,0.7,0.15,-0.55,0,"Takes a Python dictionary, adds a current timestamp to it, serializes the modifi"
+bcb_test_00104,0.1,0.05,-0.05,0.7,0.15,-0.55,0,Merges a predefined set of lists into a list and one-hot-encodes the elements of
+bcb_test_00165,0.7,0.65,-0.05,0.65,0.1,-0.55,0,Add a specific path to sys.path and create a directory in that path if it does n
+bcb_test_00156,0.15,0.0,-0.15,0.6,0.05,-0.55,0,Create a 2D numeric array (matrix) of a given dimension with random integers bet
+bcb_test_00191,0.25,0.05,-0.2,0.55,0.0,-0.55,0,Draws a seaborn pairplot for the diabetes dataset obtained from sklearn.datasets
+bcb_test_00007,0.35,0.1,-0.25,0.65,0.1,-0.55,0,"Save the provided Pandas DataFrame ""df"" in a pickle file with the given name, re"
+bcb_test_00038,0.5,0.25,-0.25,0.55,0.0,-0.55,0,Create a list of random words of a certain length. The function should raise the
+bcb_test_00053,0.55,0.3,-0.25,0.65,0.1,-0.55,0,Check that the data in a JSON file is a list of dictionaries (objects in JavaScr
+bcb_test_00088,0.25,0.0,-0.25,0.7,0.15,-0.55,0,Calculate the sum of the squares of numbers from a predefined range (POSSIBLE_NU
+bcb_test_00170,0.35,0.1,-0.25,0.55,0.0,-0.55,0,"Calculate the mean, median, and standard deviation of the data from a specific c"
+bcb_test_00180,0.3,0.05,-0.25,0.7,0.15,-0.55,0,"Generates 'n' random numbers between 0 and 1, finds those greater than their ave"
+bcb_test_00050,0.3,0.0,-0.3,0.7,0.15,-0.55,0,Transforms categorical data into a numerical format suitable for machine learnin
+bcb_test_00139,0.85,0.55,-0.3,0.55,0.0,-0.55,0,Generate a random password with a specified length and number of digits. The fun
+bcb_test_00192,0.45,0.15,-0.3,0.7,0.15,-0.55,0,Add a specific path to sys.path and update a configuration file with this path. 
+bcb_test_00200,0.55,0.85,0.3,0.55,0.0,-0.55,0,Count the number of words and punctuation marks in a string. The function should
+bcb_test_00212,0.3,0.0,-0.3,0.55,0.0,-0.55,0,Simulates sales in a pet shop based on a randomly determined number of customers
+bcb_test_00100,0.8,0.45,-0.35,0.65,0.1,-0.55,0,Convert a csv file to a json file. The function should raise the exception for: 
+bcb_test_00152,0.85,0.5,-0.35,1.0,0.45,-0.55,0,This function retrieves a JSON file from the given URL using urllib.request.urlr
+bcb_test_00094,0.7,0.3,-0.4,0.7,0.15,-0.55,0,"Make a delay for a given amount of time for a specified number of samples, measu"
+bcb_test_00188,0.4,0.0,-0.4,0.6,0.05,-0.55,0,Predicts the price based on a given area after training a linear regression mode
+bcb_test_00252,0.45,0.05,-0.4,0.65,0.1,-0.55,0,Display a plot showing a normal distribution with a given mean and standard devi
+bcb_test_00136,0.45,0.0,-0.45,0.6,0.05,-0.55,0,"Converts a hex string to bytes, salts it with a random value of specified size, "
+bcb_test_00173,0.5,0.05,-0.45,0.55,0.0,-0.55,0,"Converts a hex string to bytes, salts it with a random value of specified size, "
+bcb_test_00072,0.55,0.0,-0.55,0.7,0.15,-0.55,0,Generate a category distribution within a specified range and return as a DataFr
+bcb_test_00077,0.6,0.05,-0.55,0.7,0.15,-0.55,0,Move all files with a particular extension from one directory to another. The fu
+bcb_test_00182,1.0,0.45,-0.55,0.75,0.2,-0.55,0,"Create a random string of a specified length with uppercase letters and digits, "
+bcb_test_00238,0.8,0.2,-0.6,0.7,0.15,-0.55,0,"Create a normal distribution with a given length, plot its histogram alongside t"
+bcb_test_00004,0.8,0.8,0.0,0.9,0.4,-0.5,0,"Given a Pandas DataFrame with random numeric values, standardize it with the sta"
+bcb_test_00056,0.65,0.55,-0.1,0.75,0.25,-0.5,0,"Generate a Pandas DataFrame with random numeric values between 1 and 100, inclus"
+bcb_test_00040,0.15,0.0,-0.15,0.65,0.15,-0.5,0,Save the list of dictionaries provided in the 'result' parameter to a CSV file (
+bcb_test_00020,0.2,0.0,-0.2,0.55,0.05,-0.5,0,Appends a randomly selected integer between 0 and 100 to the given list 'my_list
+bcb_test_00029,0.2,0.0,-0.2,0.55,0.05,-0.5,0,Calculate the product of the second values in each tuple in a list of tuples and
+bcb_test_00225,0.2,0.0,-0.2,0.55,0.05,-0.5,0,Generate a DataFrame with population data for a list of cities. The population i
+bcb_test_00228,0.4,0.2,-0.2,0.65,0.15,-0.5,0,Generates a set of samples from a normal distribution with a specified mean and 
+bcb_test_00253,0.2,0.0,-0.2,0.55,0.05,-0.5,0,"Generate a random poker hand consisting of five cards, and count the frequency o"
+bcb_test_00001,0.25,0.0,-0.25,0.7,0.2,-0.5,0,Creates and displays a diagram of a parabola represented by the equation y = x^2
+bcb_test_00042,0.3,0.05,-0.25,0.6,0.1,-0.5,0,Given a list of tuples turn them into a Pandas DataFrame with math.sin applied t
+bcb_test_00092,0.25,0.0,-0.25,0.5,0.0,-0.5,0,"Generate n random strings of a specified length, count the frequency of each cha"
+bcb_test_00120,0.25,0.0,-0.25,0.55,0.05,-0.5,0,Reads a CSV file and counts the most common words in the file. This function ope
+bcb_test_00129,0.25,0.0,-0.25,0.55,0.05,-0.5,0,"After a random delay, generate a Django HttpResponse with JSON data to simulate "
+bcb_test_00224,0.25,0.0,-0.25,0.5,0.0,-0.5,0,Converts a Unix timestamp to a formatted date and time string in a specified tim
+bcb_test_00018,0.4,0.1,-0.3,0.65,0.15,-0.5,0,Create a Pandas DataFrame from a list of pairs and visualize the data using a ba
+bcb_test_00031,0.3,0.0,-0.3,0.7,0.2,-0.5,0,"Serializes a dictionary to a JSON string, compresses it using zlib, and then enc"
+bcb_test_00046,0.35,0.05,-0.3,0.65,0.15,-0.5,0,"Convert a list of tuples into a Pandas DataFrame, perform a default scaling in e"
+bcb_test_00062,0.45,0.1,-0.35,0.5,0.0,-0.5,0,Generate a random string of the specified length composed of uppercase and lower
+bcb_test_00168,0.35,0.0,-0.35,0.5,0.0,-0.5,0,"Combine a list of dictionaries with the same keys into a single dictionary, turn"
+bcb_test_00254,0.35,0.0,-0.35,0.5,0.0,-0.5,0,Extract all URLs from a string-serialized JSON dict using a specific URL pattern
+bcb_test_00071,0.6,0.0,-0.6,0.65,0.15,-0.5,0,"Load e-mail data from a CSV file, convert it into a Pandas DataFrame, and calcul"
+bcb_test_00138,1.0,1.0,0.0,0.9,0.45,-0.45,0,"Load a CSV file into a Pandas DataFrame, replace all occurrences of the string '"
+bcb_test_00147,1.0,1.0,0.0,0.55,0.1,-0.45,0,Searches for files in the specified directory that match a given regex pattern. 
+bcb_test_00003,0.8,0.75,-0.05,0.9,0.45,-0.45,0,Normalizes a dataset from a .csv file. The function should output with:     df (
+bcb_test_00131,0.5,0.45,-0.05,0.55,0.1,-0.45,0,"Removes all special characters, punctuation marks, and spaces from the input str"
+bcb_test_00220,0.9,0.85,-0.05,0.85,0.4,-0.45,0,Perform a logistic regression on a DataFrame to predict a specific target column
+bcb_test_00213,0.15,0.0,-0.15,0.45,0.0,-0.45,0,Convert all Unicode string representations of dictionaries in all text files in 
+bcb_test_00243,0.3,0.15,-0.15,0.5,0.05,-0.45,0,Draw and return the daily turnover line chart from a pandas DataFrame. The funct
+bcb_test_00250,0.25,0.05,-0.2,0.45,0.0,-0.45,0,Extract data from a text and create a Pandas DataFrame. The text contains severa
+bcb_test_00026,0.35,0.1,-0.25,0.5,0.05,-0.45,0,Generates a numpy array of random samples drawn from a normal distribution and p
+bcb_test_00086,0.25,0.0,-0.25,0.45,0.0,-0.45,0,Perform KMeans clustering on a list of data points with 2D coordinates and retur
+bcb_test_00102,0.25,0.0,-0.25,0.45,0.0,-0.45,0,Lists files in the specified source directory without descending into subdirecto
+bcb_test_00085,0.3,0.0,-0.3,0.45,0.0,-0.45,0,Convert the encoding of all text files in a specified directory from one encodin
+bcb_test_00166,0.3,0.0,-0.3,0.45,0.0,-0.45,0,Generate a histogram of the frequency of the top 30 unique random 3-letter strin
+bcb_test_00179,0.65,0.35,-0.3,0.9,0.45,-0.45,0,Add a specific path to sys.path and update a JSON file with the current date and
+bcb_test_00237,0.3,0.0,-0.3,0.85,0.4,-0.45,0,Calculate the square root of the given decimal value to a certain precision and 
+bcb_test_00193,0.35,0.0,-0.35,0.55,0.1,-0.45,0,"Obtain system details, including operating system, architecture, and memory usag"
+bcb_test_00057,0.4,0.0,-0.4,0.45,0.0,-0.45,0,Create a sales report for a list of products in different categories. The report
+bcb_test_00095,0.8,0.2,-0.6,0.85,0.4,-0.45,0,"Load a CSV file into a DataFrame, filter the lines in which the employee ID begi"
+bcb_test_00017,0.9,0.9,0.0,0.75,0.35,-0.4,0,"Given a Pandas DataFrame with random numeric values and columns X & Y, use sklea"
+bcb_test_00106,0.8,0.75,-0.05,0.8,0.4,-0.4,0,Generate a Pandas DataFrame with specified length and random data and then recor
+bcb_test_00114,0.1,0.0,-0.1,0.55,0.15,-0.4,0,"Save the Sklearn dataset (""Data"" and ""Destination"") in the pickle file ""save.pkl"
+bcb_test_00035,0.9,0.75,-0.15,0.5,0.1,-0.4,0,Creates a CSV file on a given file path with random numeric data. The number of 
+bcb_test_00036,0.55,0.7,0.15,0.45,0.05,-0.4,0,This function generates a CSV file response from a Django HttpRequest. It constr
+bcb_test_00081,0.35,0.15,-0.2,0.7,0.3,-0.4,0,Draws the linear equation y = 2x + 1 on a 2D plot for x values ranging from -10 
+bcb_test_00089,0.25,0.05,-0.2,0.4,0.0,-0.4,0,Generates and plots a complex wave with a specified amplitude and frequency over
+bcb_test_00178,0.2,0.0,-0.2,0.45,0.05,-0.4,0,Get the weekday of the date 'days_in_past' days ago from today. This function co
+bcb_test_00201,0.6,0.4,-0.2,0.55,0.15,-0.4,0,Scrape a web page for the first occurrence of a specified HTML tag and return it
+bcb_test_00005,0.7,0.45,-0.25,0.85,0.45,-0.4,0,Perform a linear regression analysis on a given DataFrame. The function should o
+bcb_test_00025,0.25,0.0,-0.25,0.5,0.1,-0.4,0,Create a dictionary where keys are specified letters and values are lists of ran
+bcb_test_00044,0.4,0.15,-0.25,0.5,0.1,-0.4,0,Train a linear regression model on a dataset and predict the value of a particul
+bcb_test_00065,0.35,0.1,-0.25,0.45,0.05,-0.4,0,Fetches data from a given dictionary that includes a CSV URL and returns a panda
+bcb_test_00149,0.25,0.0,-0.25,0.4,0.0,-0.4,0,Serialize an object using pickle and overwrite the specified file with this seri
+bcb_test_00163,0.25,0.0,-0.25,0.45,0.05,-0.4,0,Sorts a numeric 2D numpy array in ascending order and finds all unique combinati
+bcb_test_00214,0.35,0.1,-0.25,0.5,0.1,-0.4,0,Processes a CSV file to train a Random Forest classifier and generates a formatt
+bcb_test_00230,0.45,0.7,0.25,0.55,0.15,-0.4,0,Calculate and plot the daytime temperatures for New York over a given period. Th
+bcb_test_00048,0.4,0.05,-0.35,0.4,0.0,-0.4,0,Find the k smallest numbers in a randomly generated list using heapq. The functi
+bcb_test_00023,0.53,0.15,-0.38,0.65,0.25,-0.4,0,Perform DBSCAN clustering on the data by transforming it into a DataFrame and re
+bcb_test_00060,0.45,0.05,-0.4,0.45,0.05,-0.4,0,"Generate a specified (i.e., points_counts) number of random points within a circ"
+bcb_test_00190,0.5,0.1,-0.4,0.65,0.25,-0.4,0,Sort the given list in ascending order based on the degree value of its elements
+bcb_test_00245,0.65,0.2,-0.45,0.8,0.4,-0.4,0,"Processes a base64-encoded JSON string, stores the data in a CSV file, and retur"
+bcb_test_00203,0.1,0.0,-0.1,0.5,0.15,-0.35,0,Responds to a client's request by sending a JSON-formatted message containing th
+bcb_test_00011,0.15,0.0,-0.15,0.35,0.0,-0.35,0,Calculate the product of the corresponding numbers for a list of uppercase lette
+bcb_test_00055,0.35,0.2,-0.15,0.35,0.0,-0.35,0,Count the occurrence of each word in a sentence and return the result as a dicti
+bcb_test_00119,0.15,0.0,-0.15,0.45,0.1,-0.35,0,Plot a scatter graph of tuples and highlight the tuple with the maximum value at
+bcb_test_00121,0.15,0.0,-0.15,0.35,0.0,-0.35,0,"Creates a list of random strings, each of a specified length, and counts the fre"
+bcb_test_00151,0.15,0.0,-0.15,0.35,0.0,-0.35,0,"Connects two 2D numeric arrays (matrices) along the second axis (columns), conve"
+bcb_test_00184,0.5,0.35,-0.15,0.65,0.3,-0.35,0,Save a Pandas DataFrame to a JSON file in a specified directory. Note that: The 
+bcb_test_00207,0.15,0.0,-0.15,0.35,0.0,-0.35,0,Draw the age distribution of the persons in an SQLite3 table and returns the Axe
+bcb_test_00199,0.6,0.4,-0.2,0.65,0.3,-0.35,0,Create a list of normally distributed random numbers and plot their histogram an
+bcb_test_00240,0.3,0.1,-0.2,0.35,0.0,-0.35,0,Draw a pie chart that shows the job distribution in the given data and return th
+bcb_test_00244,0.2,0.4,0.2,0.35,0.0,-0.35,0,Create a word cloud from the text of a Wikipedia page. The function should outpu
+bcb_test_00118,0.26,0.0,-0.26,0.4,0.05,-0.35,0,Draws a plot visualizing a complex distribution created from two Gaussian distri
+bcb_test_00032,0.3,0.0,-0.3,0.55,0.2,-0.35,0,Perform Principal Component Analysis (PCA) on the given array and record the fir
+bcb_test_00219,0.35,0.05,-0.3,0.6,0.25,-0.35,0,Computes the average of each row in a provided 2D array and appends these averag
+bcb_test_00160,0.35,0.0,-0.35,0.35,0.0,-0.35,0,Analyze the relationship between two variables in a DataFrame. The function perf
+bcb_test_00132,0.15,0.15,0.0,0.4,0.1,-0.3,0,Converts an XML string into a dictionary representation and saves it as a JSON f
+bcb_test_00227,1.0,1.0,0.0,0.45,0.15,-0.3,0,Moves a random file from the source directory to the specified destination direc
+bcb_test_00022,0.2,0.05,-0.15,0.35,0.05,-0.3,0,Draw and return a subplot of a normal distribution with the given mean and stand
+bcb_test_00123,0.15,0.0,-0.15,0.35,0.05,-0.3,0,This function creates a random session key comprising letters and digits with a 
+bcb_test_00162,0.15,0.0,-0.15,0.3,0.0,-0.3,0,"Draws a histogram of the ""from_user"" values in the provided result. The color of"
+bcb_test_00217,0.3,0.15,-0.15,0.4,0.1,-0.3,0,Generate a random string of a given length using ASCII letters and calculate the
+bcb_test_00113,0.2,0.0,-0.2,0.3,0.0,-0.3,0,"Scale the ""x"" and ""y"" arrays using the standard scaler of sklearn and plot them "
+bcb_test_00158,0.25,0.05,-0.2,0.35,0.05,-0.3,0,Converts a date time from one timezone to another. The function should output wi
+bcb_test_00105,0.3,0.55,0.25,0.3,0.0,-0.3,0,Hashes a password using the PBKDF2 HMAC algorithm with SHA-256 as the hashing al
+bcb_test_00066,0.3,0.0,-0.3,0.4,0.1,-0.3,0,Draws a seaborn pair plot of the iris dataset using Arial font. This function se
+bcb_test_00197,0.37,0.05,-0.32,0.4,0.1,-0.3,0,Performs a Fast Fourier Transform (FFT) on the sum of each row in a 2D array and
+bcb_test_00033,0.4,0.0,-0.4,0.55,0.25,-0.3,0,"Generate diagrams for the sine and cosine functions over the interval [0, 2π]. T"
+bcb_test_00084,1.0,1.0,0.0,0.25,0.0,-0.25,0,Count the frequency of each letter in a list after repeating it a given number o
+bcb_test_00074,0.35,0.4,0.05,0.45,0.2,-0.25,0,Perform Principal Component Analysis (PCA) on the DataFrame and record the first
+bcb_test_00235,0.05,0.0,-0.05,0.25,0.0,-0.25,0,"Create a counter from a list ""l"" and move the first 3 elements to the end of the"
+bcb_test_00248,0.2,0.1,-0.1,0.35,0.1,-0.25,0,Test the normality of a particular numeric column from a DataFrame with Shapiro-
+bcb_test_00249,0.1,0.0,-0.1,0.25,0.0,-0.25,0,Draw a bar chart of the counts of each unique value in the 'value' column of a p
+bcb_test_00002,0.15,0.0,-0.15,0.25,0.0,-0.25,0,Merge all sublists from a list of lists into a list and return a count of the el
+bcb_test_00141,0.2,0.05,-0.15,0.25,0.0,-0.25,0,Generate a random string of length 'n' and find all non-overlapping matches of t
+bcb_test_00140,0.25,0.05,-0.2,0.4,0.15,-0.25,0,Creates a matrix of specified dimensions with random integers within a given ran
+bcb_test_00211,0.2,0.0,-0.2,0.3,0.05,-0.25,0,Imports data from a specified CSV input into an SQLite database and retrieves it
+bcb_test_00049,0.25,0.0,-0.25,0.25,0.0,-0.25,0,"Executes a list of shell commands in parallel using multiprocessing, and collect"
+bcb_test_00108,0.25,0.0,-0.25,0.25,0.0,-0.25,0,Create a dictionary in which the keys are letters and the values are random inte
+bcb_test_00154,0.55,0.8,0.25,0.35,0.1,-0.25,0,Download and extract a zip file from a specified URL to a designated directory. 
+bcb_test_00028,0.0,0.0,0.0,0.25,0.05,-0.2,0,"Count the occurrence of each integer in the values of the input dictionary, wher"
+bcb_test_00041,1.0,1.0,0.0,0.2,0.0,-0.2,0,"Find the occurrences of each two-letter combination in the sanitized word, where"
+bcb_test_00068,0.0,0.0,0.0,0.2,0.0,-0.2,0,"Open an image, rotate it around a certain angle, and then display both the origi"
+bcb_test_00112,0.0,0.0,0.0,0.2,0.0,-0.2,0,"Find the n most common letters in a dictionary, x, where the key letters and the"
+bcb_test_00116,1.0,1.0,0.0,0.2,0.0,-0.2,0,Creates a histogram of the pixel values of a grayscale image. Note that: The fun
+bcb_test_00155,1.0,1.0,0.0,0.2,0.0,-0.2,0,Read a CSV file into a Pandas DataFrame and then delete the entire contents of t
+bcb_test_00194,1.0,1.0,0.0,0.2,0.0,-0.2,0,"Encrypt a password using Salt and SHA-256, then encode the result in base64. The"
+bcb_test_00209,1.0,1.0,0.0,0.25,0.05,-0.2,0,Normalize the data and visualize it using a heatmap. This function takes a panda
+bcb_test_00232,0.05,0.05,0.0,0.25,0.05,-0.2,0,Apply a Gaussian filter to a given image and draw the original and filtered imag
+bcb_test_00117,0.05,0.0,-0.05,0.2,0.0,-0.2,0,Constructs a DataFrame that enumerates the character counts of each string in a 
+bcb_test_00159,0.05,0.0,-0.05,0.25,0.05,-0.2,0,"Reads from a given file pointer to a JSON file, evaluates strings that represent"
+bcb_test_00189,0.05,0.0,-0.05,0.2,0.0,-0.2,0,Converts a datetime string from a given timezone to a datetime string in a rando
+bcb_test_00223,0.1,0.0,-0.1,0.3,0.1,-0.2,0,"Downloads a text file from a specified URL, processes the text to count the freq"
+bcb_test_00099,0.15,0.4,0.25,0.2,0.0,-0.2,0,"Stem every word in a sentence, except the last, and count the frequency of each "
+bcb_test_00008,0.3,0.0,-0.3,0.25,0.05,-0.2,0,Generates an HMAC (Hash-based Message Authentication Code) signature for a given
+bcb_test_00047,1.0,1.0,0.0,0.2,0.05,-0.15,0,Converts a 2D list into a pandas DataFrame and applies PCA for dimensionality re
+bcb_test_00075,0.0,0.0,0.0,0.15,0.0,-0.15,0,Validates the HMAC SHA-1 signature of a base64-encoded message against a provide
+bcb_test_00208,0.0,0.0,0.0,0.15,0.0,-0.15,0,"Makes an HTTPS GET request to a specified server and path, and retrieves the res"
+bcb_test_00080,0.1,0.05,-0.05,0.15,0.0,-0.15,0,Compares the contents of two gzip files and returns a string describing the diff
+bcb_test_00229,0.05,0.0,-0.05,0.15,0.0,-0.15,0,Create a generator object that generates a sequence of tuples. Each tuple contai
+bcb_test_00091,0.1,0.0,-0.1,0.15,0.0,-0.15,0,"Perform linear regression to ""x,"" ""y,"" against ""z"" from a list of dictionaries """
+bcb_test_00196,0.1,0.0,-0.1,0.15,0.0,-0.15,0,Plot values from a list of dictionaries based on specified keys and return the p
+bcb_test_00043,0.2,0.0,-0.2,0.15,0.0,-0.15,0,Generate a list containing random strings of lowercase letters. Each string's le
+bcb_test_00148,0.3,0.55,0.25,0.15,0.0,-0.15,0,"Retrieves user information from the GitHub API for a given username, normalizes "
+bcb_test_00103,1.0,1.0,0.0,0.25,0.15,-0.1,0,Determines if a specific subset of data is stationary by filtering rows where co
+bcb_test_00210,0.0,0.0,0.0,0.1,0.0,-0.1,0,Writes a list of OrderedDicts to an Excel file. Each OrderedDict in the list rep
+bcb_test_00226,0.05,0.05,0.0,0.1,0.0,-0.1,0,"Fetches the content of a webpage specified by its URL, parses it to find <script"
+bcb_test_00233,0.0,0.0,0.0,0.1,0.0,-0.1,0,"Processes a dataset containing salary information and experience, then plots nor"
+bcb_test_00216,0.11,0.05,-0.06,0.1,0.0,-0.1,0,Generates a DataFrame with random numerical data and visualizes this data in a s
+bcb_test_00090,0.1,0.0,-0.1,0.1,0.0,-0.1,0,Reads all files with a specified extension in a given directory and returns thei
+bcb_test_00034,0.15,0.3,0.15,0.3,0.2,-0.1,0,Perform Principal Component Analysis (PCA) on the dataframe and visualize the tw
+bcb_test_00174,0.05,0.6,0.55,0.15,0.05,-0.1,0,Draws a pie chart of the status distribution from a pandas DataFrame with a 'Sta
+bcb_test_00115,0.0,0.0,0.0,0.05,0.0,-0.05,0,"Aggregate the values of the same keys from a nested dictionary and remove the ""e"
+bcb_test_00143,0.0,0.0,0.0,0.05,0.0,-0.05,0,Sorts a given dictionary by its keys in ascending order and returns a PrettyTabl
+bcb_test_00109,0.06,0.1,0.04,0.05,0.0,-0.05,0,Compares two files to determine if they are identical by computing and comparing
+bcb_test_00098,0.05,0.0,-0.05,0.1,0.05,-0.05,0,import pandas as pd Train a random forest classifier to perform the classificati
+bcb_test_00030,0.15,0.0,-0.15,0.05,0.0,-0.05,0,Generate a number of random lowercase letters and count their occurrences. This 
+bcb_test_00202,0.31,0.0,-0.31,0.05,0.0,-0.05,0,Generates a DataFrame filled with random integers. The dimensions of the DataFra
+bcb_test_00010,0.0,0.0,0.0,0.0,0.0,0.0,0,Count the frequency of each alphanumeric character in a given string after remov
+bcb_test_00145,0.0,0.0,0.0,0.0,0.0,0.0,0,Serializes an object into a JSON string with support for complex data types like
+bcb_test_00153,0.1,0.1,0.0,0.3,0.3,0.0,0,Plots a heatmap of a given 2D numerical array and prints the sum of each row. Th
+bcb_test_00171,0.0,0.0,0.0,0.0,0.0,0.0,0,"Serializes an object to a JSON string, handling complex data types through a cus"
+bcb_test_00241,0.08,0.0,-0.08,0.0,0.0,0.0,0,"Perform a paired t-test for the number of words in two strings, only if the stri"
+bcb_test_00125,0.0,0.1,0.1,0.0,0.0,0.0,0,Draw a pie chart of the number of unique values in a given DataFrame column with
+bcb_test_00111,0.1,0.55,0.45,0.0,0.0,0.0,0,Perform K-Means clustering on the given DataFrame using the sklearn KMeans algor
+bcb_test_00176,0.05,0.1,0.05,0.05,0.1,0.05,0,Reads data from a CSV file and generates a bar plot based on grouped mean values
+bcb_test_00013,1.0,1.0,0.0,0.15,0.25,0.1,0,Query an SQLite database and return the results. This function connects to a giv

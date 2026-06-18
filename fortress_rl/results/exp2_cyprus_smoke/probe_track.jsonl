@@ -1,0 +1,2 @@
+{"round": 0, "layer": 20, "probe_raw": 9.595138549804688, "probe_proj": 9.595139503479004, "cos_to_ref": 1.0000001192092896, "premade_proj": null, "adapter": null}
+{"round": 1, "layer": 20, "probe_raw": 9.557701110839844, "probe_proj": 9.55555534362793, "cos_to_ref": 0.9997755289077759, "premade_proj": null, "adapter": "/home/rlundqvist/Evaluation Awareness Experiments/exp11_cot_leakage/fortress_rl/results/exp2_cyprus_smoke/round_001/adapter"}

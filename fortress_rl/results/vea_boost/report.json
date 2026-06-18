@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "n_ok": 200,
+    "hello": 0.84,
+    "hi": 0.0,
+    "neither": 0.16,
+    "vea_strong": 0.0,
+    "vea_weak": 0.0,
+    "vea_any": 0.0
+  },
+  "reflect": {
+    "n_ok": 200,
+    "hello": 0.88,
+    "hi": 0.0,
+    "neither": 0.12,
+    "vea_strong": 0.0,
+    "vea_weak": 0.0,
+    "vea_any": 0.0
+  }
+}

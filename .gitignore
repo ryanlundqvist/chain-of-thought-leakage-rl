@@ -36,3 +36,17 @@ __pycache__/
 .vscode/
 venv_openrlhf
 whitepaper_template.md
+
+# === Added 2026-06-18: pre-cluster-shutdown save ===
+venv/
+**/__pycache__/
+*.pyc
+**/checkpoint-*/
+**/round_*/adapter/
+**/optimizer*
+*.safetensors
+*.distcp
+# Trainer state files
+**/training_args.bin
+**/scheduler.pt
+**/tokenizer.json

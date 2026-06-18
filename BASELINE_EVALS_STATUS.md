@@ -36,4 +36,12 @@ dist-info metadata (`is_*_available()`→False crashed the probe).
 
 1. **VEA is purely prefix-driven** — 0% at both checkpoints without the Wood-Labs cue (vs with-prefix 12%→2%).
 2. **Clean-phase RL's type-hint rise is prefix-INDEPENDENT** (+40pp no-prefix, ≈+36pp with-prefix) — a real, general behavioral shift, not an eval-cue artifact.
-3. **Contrastive EA probe is HIGHER without the prefix** (~0.28 vs ~0.20) — a deconfound caveat: the probe direction isn't cleanly tracking the prefix-induced eval-awareness (cf. exp6).
+3. **EA probe — the apparent "higher without prefix" was an apples-to-oranges artifact.** The old
+   with-prefix `0.200` was VEA=NONE-filtered and from the original clean-phase run; the no-prefix `0.277`
+   was all-rollouts/new-harness. Re-measured apples-to-apples at BASE (obf_BASE: same 126 BCB tasks,
+   same probe, all rollouts, only the system prompt carries the cue):
+   - probe **@ prompt-end**: no-prefix 0.099 → with-prefix 0.152 (**+0.053**, cue-driven, as expected).
+   - probe **across-CoT**: no-prefix 0.277 → with-prefix 0.292 (**+0.015**, ~flat → prefix-INVARIANT).
+   The real deconfound: the across-CoT probe stays high (~0.28) even with NO cue and ~0% verbalized EA,
+   so it isn't a clean EA readout (cf. exp6 cos(EA,refusal)=0.46-0.64). The prefix's measurable effect is
+   concentrated at the prompt position, not in the CoT. (See updated panel C of baseline_evalB_narrative.png.)
