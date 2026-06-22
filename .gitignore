@@ -50,3 +50,8 @@ venv/
 **/training_args.bin
 **/scheduler.pt
 **/tokenizer.json
+
+# Large raw result jsonls — hosted on HuggingFace, not GitHub
+results/resampling/*.jsonl
+results/lda/*.jsonl
+results/*.jsonl

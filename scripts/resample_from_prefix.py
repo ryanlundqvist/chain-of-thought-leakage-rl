@@ -63,12 +63,20 @@ def split_think(text):
         return cot, text[i + len("</think>"):].strip()
     return text.replace("<think>", ""), ""
 
+TRUNC_MODE = "sentence"   # sentence | prev_sentence | paragraph | whole — resampling granularity taxonomy
+
 def regex_trunc(cot):
-    """Char offset to truncate the CoT at (start of the sentence containing the first VEA match)."""
+    """Char offset to truncate the CoT at, per TRUNC_MODE (granularity of the resampling baseline)."""
     m = VEA_RE.search(cot)
     if not m: return None
-    bs = [x.end() for x in SENT.finditer(cot[:m.start()])]
-    return bs[-1] if bs else 0
+    if TRUNC_MODE == "whole": return 0                       # regenerate the entire CoT
+    if TRUNC_MODE == "paragraph":                            # start of the paragraph containing the VEA
+        para = [x.end() for x in re.finditer(r"\n\s*\n", cot[:m.start()])]
+        return para[-1] if para else 0
+    bs = [x.end() for x in SENT.finditer(cot[:m.start()])]   # sentence boundaries before the VEA
+    if TRUNC_MODE == "prev_sentence":                        # one sentence earlier than the VEA sentence
+        return bs[-2] if len(bs) >= 2 else 0
+    return bs[-1] if bs else 0                               # 'sentence' (default): start of the VEA sentence
 
 
 async def locate_120b(mon, cot):
@@ -182,8 +190,10 @@ async def main():
     ap.add_argument("--concurrency", type=int, default=48)
     ap.add_argument("--save-text", action="store_true", help="save prefix + resampled CoT/response text for inspection")
     ap.add_argument("--shard", default=None, help="N/M : process only rollouts where idx%M==N (parallelize across jobs)")
+    ap.add_argument("--trunc-mode", default="sentence", choices=["sentence","prev_sentence","paragraph","whole"],
+                    help="resampling granularity: where to truncate before regenerating")
     args = ap.parse_args()
-    global SAVE_TEXT; SAVE_TEXT = args.save_text
+    global SAVE_TEXT, TRUNC_MODE; SAVE_TEXT = args.save_text; TRUNC_MODE = args.trunc_mode
 
     tok = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
     recs = load_vea_rollouts(args.runs, cap_per_pid=args.cap_per_pid)
