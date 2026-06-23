@@ -1,20 +1,20 @@
 #!/bin/bash
-# Overnight watch: wake on GPU change / job-set change / NEW fatal error / 30-min heartbeat.
-cd "$HOME/Evaluation Awareness Experiments/exp11_cot_leakage" 2>/dev/null
-prev_free=-1; prev_jobs=""; last_hb=$(date +%s); last_err=""
-echo "[$(date +%H:%M)] MONITOR ARMED v2"
-while true; do
-  fc=$(count 2>/dev/null | awk '/^FREE/{print $2}'); fd=$(count 2>/dev/null | awk '/^FREE/{print $3}')
-  if [[ "$fc" =~ ^[0-9]+$ && "$fd" =~ ^[0-9]+$ ]]; then
-    free=$((fc+fd))
-    [ "$prev_free" != "-1" ] && { d=$((free-prev_free)); [ ${d#-} -ge 2 ] && echo "[$(date +%H:%M)] GPUCHANGE free=$free (compute=$fc dev=$fd) was=$prev_free"; }
-    prev_free=$free
+cd "$HOME/Evaluation Awareness Experiments/exp11_cot_leakage"
+tick=0; last_err=""
+echo "MON-START $(date +%H:%M)"
+freeg(){ count 2>/dev/null | awk '/^FREE/{print $2+$3}'; }
+while :; do
+  free=$(freeg)
+  # surface REAL errors in tonight's logs (sweep zoom_*, iter_*, zjudge_*), excluding benign shutdown/cache noise
+  ef=$(ls -t logs/zoom_*.log logs/iter_*.log logs/zjudge_*.log 2>/dev/null | head -8 \
+       | xargs -r grep -lE "Traceback|CUDA error|out of memory|RuntimeError|all-INVALID|Connection refused" 2>/dev/null \
+       | xargs -r grep -LE "attempt|Shutting down|/psm_|VariableCache|FutureWarning" 2>/dev/null | head -1)
+  [ -n "$ef" ] && [ "$ef" != "$last_err" ] && { echo "ERR @ $(date +%H:%M): $ef"; last_err="$ef"; }
+  tick=$((tick+1))
+  if [ $((tick % 30)) -eq 0 ]; then
+    j=$(squeue -u rlundqvist -h -o "%j %t" 2>/dev/null | grep -E "zoom|iterresamp|zjudge" | awk '{print $2}' | sort | uniq -c | tr '\n' ' ')
+    ex=$(squeue -u rlundqvist -h -o "%j" 2>/dev/null | grep -c ex15)
+    echo "HB @ $(date +%H:%M) free=${free} | mine(zoom/iter/judge): ${j:-none} | ex15:${ex}"
   fi
-  jobs=$(squeue -u "$USER" -h -o "%i:%T" 2>/dev/null | grep -vE "^(27398|27399|27401|27402):" | sort | tr '\n' ' ')
-  [ "$jobs" != "$prev_jobs" ] && echo "[$(date +%H:%M)] JOBCHANGE now=[$jobs] was=[$prev_jobs]"
-  prev_jobs="$jobs"
-  err=$(find logs -name '*.log' -mmin -4 2>/dev/null | xargs -r tail -n 12 2>/dev/null | grep -iE "FATAL:|CUDA error|out of memory|EngineDeadError|server died|server not ready|RuntimeError" | grep -ivE "urllib3|connectionpool|Parent process exited|retrying|warn" | tail -1)
-  if [ -n "$err" ] && [ "$err" != "$last_err" ]; then echo "[$(date +%H:%M)] ERRORLOG: ${err:0:150}"; last_err="$err"; fi
-  now=$(date +%s); [ $((now-last_hb)) -ge 1800 ] && { echo "[$(date +%H:%M)] HEARTBEAT free=${free:-?} active_jobs=$(echo $jobs|wc -w) | $(date '+%H:%M')"; last_hb=$now; }
-  sleep 90
+  sleep 60
 done

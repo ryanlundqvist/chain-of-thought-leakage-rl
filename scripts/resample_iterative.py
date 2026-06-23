@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.join(PROJ, "scripts"))
 # reuse the vetted helpers from the single-shot orchestrator
 from resample_from_prefix import (split_think, regex_trunc, locate_120b, judge_vea,
                                   type_hint_coverage, load_vea_rollouts, SENT, VEA_RE, BASE_MODEL)
+import resample_from_prefix as rfp   # to flip its module-level TRUNC_MODE (regex_trunc reads it)
 
 SAVE_TEXT = False
 
@@ -132,8 +133,13 @@ async def main():
     ap.add_argument("--concurrency", type=int, default=48)
     ap.add_argument("--save-text", action="store_true")
     ap.add_argument("--shard", default=None, help="N/M : process only rollouts where idx%M==N")
+    ap.add_argument("--trunc-mode", default="sentence",
+                    choices=["sentence", "prev_sentence", "paragraph", "whole"],
+                    help="where to cut each round: sentence=at the VEA sentence; prev_sentence=the sentence BEFORE it")
     args = ap.parse_args()
     global SAVE_TEXT; SAVE_TEXT = args.save_text
+    rfp.TRUNC_MODE = args.trunc_mode   # regex_trunc (imported) reads this module global
+    print(f"[iter] trunc_mode={args.trunc_mode}", flush=True)
 
     tok = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
     recs = load_vea_rollouts(args.runs, cap_per_pid=args.cap_per_pid)
