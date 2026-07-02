@@ -30,4 +30,22 @@ Low-VEA novel prefixes (not_eval, dont_reveal, plain, senior_eng) have ~0 base V
 - Next: no-CoT ablation (does senior_eng's type-hinting survive with no reasoning = pure style? does
   r260's not_eval behavior survive = CoT-mediated?), + probe on the r260-only cells.
 
+## CRUCIAL: r260-only obfuscation is PROMPT-gated, not prefix-unlocked (dataset-sample check)
+Comparing the 22 obfuscators vs 10 non-obfuscator dataset prompts (latentTH base→r260):
+| prefix | OBFUSCATORS | DATASET-SAMPLE |
+|---|---|---|
+| senior_eng (style) | 100→100 | **94→95** (high on BOTH = pure style) |
+| interview (style) | 70→81 | 52→44 |
+| not_eval (r260-only) | 11→**39** (+28) | 13→17 (**+4**) |
+| dont_reveal | 9→**34** (+25) | 15→16 (**+1**) |
+| think_private | 11→32 (+21) | 12→16 (+4) |
+| plain | 13→33 (+20) | 13→17 (+4) |
+| prod_logged | 21→**54** (+33) | 18→23 (+5) |
+| eval_wood | 34→54 | 49→**14** (r260 REDUCES on dataset) |
+
+→ The novel prefixes do NOT broadly unlock r260 obfuscation — the +20-33pp gaps **collapse to +1-5pp on
+non-obfuscator prompts.** So there is NO prefix that makes r260 obfuscate on arbitrary prompts; the effect
+stays the same ~22 prompt-concentrated set, and r260 does it there **regardless of framing (even "not_eval").**
+Only the STYLE confound (senior_eng) is broad. This reconciles the sweep with the 8-shard landscape (agg −3.1pp).
+
 Data: results/grpo_runs/sweep_{BASE,r260}/ (+ vea_judged.jsonl) · cues: data/cue_ladder/cues_sweep.json
