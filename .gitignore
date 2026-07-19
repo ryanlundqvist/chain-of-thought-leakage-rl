@@ -55,3 +55,7 @@ venv/
 results/resampling/*.jsonl
 results/lda/*.jsonl
 results/*.jsonl
+
+# generated shard data for coupling experiment
+coupling_experiment/data/couple_s*.jsonl
+coupling_experiment/data/plain_s*.jsonl
