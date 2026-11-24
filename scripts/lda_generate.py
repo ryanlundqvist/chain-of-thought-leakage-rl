@@ -66,7 +66,7 @@ def lda_generate_nocache(model, tok, prompts, alpha, max_new=2000, temperature=0
     B = ids.shape[0]; plen = ids.shape[1]
     _e = model.generation_config.eos_token_id
     eos_ids = set(_e if isinstance(_e, list) else [_e if _e is not None else tok.eos_token_id])
-    done = [False] * B
+    done = [False] * B; n_gen = [max_new] * B  # tokens kept per row (through its first EOS)
     for step in range(max_new):
         with model.disable_adapter():
             bl = model(input_ids=ids, attention_mask=attn).logits[:, -1, :]
@@ -75,9 +75,10 @@ def lda_generate_nocache(model, tok, prompts, alpha, max_new=2000, temperature=0
         ids = torch.cat([ids, nxt.unsqueeze(-1)], dim=1)
         attn = torch.cat([attn, torch.ones((B, 1), dtype=attn.dtype, device=dev)], dim=1)
         for b in range(B):
-            if not done[b] and nxt[b].item() in eos_ids: done[b] = True
+            if not done[b] and nxt[b].item() in eos_ids: done[b] = True; n_gen[b] = step + 1
         if all(done): break
-    return [tok.decode(ids[b, plen:], skip_special_tokens=True) for b in range(B)]
+    # finished rows keep being extended until the whole batch stops; drop what came after their EOS
+    return [tok.decode(ids[b, plen:plen + n_gen[b]], skip_special_tokens=True) for b in range(B)]
 
 
 @torch.no_grad()
